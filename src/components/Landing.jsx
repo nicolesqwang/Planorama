@@ -24,7 +24,7 @@ export default function Landing() {
 
 if (!mode) return (
   <div className="min-h-screen bg-[#F7F5F2] flex flex-col">
-    <nav className="px-10 py-5 flex items-center justify-between">
+    <nav className="px-10 py-5 flex items-center justify-between relative z-10">
       <span className="text-xl font-bold text-[#1C1B19]">Planorama</span>
       <div className="flex gap-3">
         <button

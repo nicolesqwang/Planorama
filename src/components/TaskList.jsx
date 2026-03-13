@@ -83,8 +83,41 @@ function suggestFromBg(bgHex) {
   };
 }
 
-function ManageModal({ categories, addCategory, removeCategory, taskTypes, addTaskType, removeTaskType, onClose }) {
+// ── Color editor sub-form (reused for add + edit) ─────────────
+function CatColorForm({ name, bg, text, border, onNameChange, onBgChange, onTextChange, onBorderChange, bgTouched, userEditedText, userEditedBorder }) {
+  return (
+    <>
+      <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="e.g. Biology, Economics, Work"
+        className="w-full text-sm bg-white rounded-lg px-3 py-2 outline-none border border-gray-200 focus:ring-2 focus:ring-[#E8735A]/40" />
+      <div className="flex gap-4 items-end flex-wrap">
+        <label className="flex flex-col gap-1 text-xs text-[#8C8880]">
+          Background
+          <input type="color" value={bg} onChange={e => onBgChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#8C8880]">
+          <span className="flex items-center gap-1">Text {!userEditedText && bgTouched && <span className="text-[#E8735A] text-[10px]">auto</span>}</span>
+          <input type="color" value={text} onChange={e => onTextChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-[#8C8880]">
+          <span className="flex items-center gap-1">Border {!userEditedBorder && bgTouched && <span className="text-[#E8735A] text-[10px]">auto</span>}</span>
+          <input type="color" value={border} onChange={e => onBorderChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
+        </label>
+        <div className="flex flex-col gap-1 text-xs text-[#8C8880]">
+          Preview
+          <span className="text-xs font-medium px-3 py-1 rounded-full mt-1" style={{ background: bg, color: text, border: `1px solid ${border}` }}>
+            {name || "Preview"}
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ManageModal({ categories, addCategory, removeCategory, updateCategory, taskTypes, addTaskType, removeTaskType, onClose }) {
   const [tab, setTab]             = useState("categories");
+  const [editingCatId, setEditingCatId] = useState(null);
+
+  // New category form
   const [catName, setCatName]     = useState("");
   const [catBg, setCatBg]         = useState("#E8F4FD");
   const [catText, setCatText]     = useState("#2E86C1");
@@ -92,28 +125,29 @@ function ManageModal({ categories, addCategory, removeCategory, taskTypes, addTa
   const [bgTouched, setBgTouched] = useState(false);
   const [userEditedText, setUserEditedText]   = useState(false);
   const [userEditedBorder, setUserEditedBorder] = useState(false);
-  const [typeName, setTypeName]   = useState("");
-  const [saving, setSaving]       = useState(false);
 
-  function handleBgChange(hex) {
-    setCatBg(hex);
-    setBgTouched(true);
-    // Only auto-suggest if user hasn't manually set text/border
-    if (!userEditedText || !userEditedBorder) {
-      const { text, border } = suggestFromBg(hex);
-      if (!userEditedText)   setCatText(text);
-      if (!userEditedBorder) setCatBorder(border);
-    }
+  // Edit category form
+  const [editName, setEditName]     = useState("");
+  const [editBg, setEditBg]         = useState("");
+  const [editText, setEditText]     = useState("");
+  const [editBorder, setEditBorder] = useState("");
+  const [editBgTouched, setEditBgTouched]           = useState(false);
+  const [editUserEditedText, setEditUserEditedText]   = useState(false);
+  const [editUserEditedBorder, setEditUserEditedBorder] = useState(false);
+
+  const [typeName, setTypeName] = useState("");
+  const [saving, setSaving]     = useState(false);
+
+  function startEdit(cat) {
+    setEditingCatId(cat.id);
+    setEditName(cat.name); setEditBg(cat.bg); setEditText(cat.text); setEditBorder(cat.border);
+    setEditBgTouched(false); setEditUserEditedText(true); setEditUserEditedBorder(true);
   }
 
-  function handleTextChange(hex) {
-    setCatText(hex);
-    setUserEditedText(true);
-  }
-
-  function handleBorderChange(hex) {
-    setCatBorder(hex);
-    setUserEditedBorder(true);
+  function applyBgSuggest(hex, setB, setT, setBd, userT, userBd, setTouch) {
+    setB(hex); setTouch(true);
+    if (!userT) { const s = suggestFromBg(hex); setT(s.text); }
+    if (!userBd) { const s = suggestFromBg(hex); setBd(s.border); }
   }
 
   async function handleAddCat() {
@@ -125,9 +159,15 @@ function ManageModal({ categories, addCategory, removeCategory, taskTypes, addTa
     setCatBg("#E8F4FD"); setCatText("#2E86C1"); setCatBorder("#AED6F1");
   }
 
+  async function handleSaveEdit(id) {
+    setSaving(true);
+    await updateCategory(id, { name: editName.trim(), bg: editBg, text: editText, border: editBorder });
+    setEditingCatId(null); setSaving(false);
+  }
+
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-[540px] max-h-[80vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-xl w-[540px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
         <h2 className="text-lg font-semibold text-[#1C1B19] mb-4">Manage Categories & Types</h2>
         <div className="flex gap-2 mb-5">
@@ -140,56 +180,56 @@ function ManageModal({ categories, addCategory, removeCategory, taskTypes, addTa
         {tab === "categories" && (
           <div>
             {categories.length === 0 && (
-              <p className="text-sm text-[#8C8880] mb-4">No categories yet. Try adding ones like <strong>Math</strong>, <strong>Biology</strong>, or <strong>Work</strong>.</p>
+              <p className="text-sm text-[#8C8880] mb-4">No categories yet. Add ones like <strong>Math</strong>, <strong>Biology</strong>, or <strong>Work</strong>.</p>
             )}
             <div className="flex flex-col gap-2 mb-5">
               {categories.map(cat => (
-                <div key={cat.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#F7F5F2]">
-                  <span className="text-xs font-medium px-3 py-1 rounded-full"
-                    style={{ background:cat.bg, color:cat.text, border:`1px solid ${cat.border}` }}>{cat.name}</span>
-                  <button onClick={() => removeCategory(cat.id)} className="text-xs text-red-400 hover:text-red-600">Remove</button>
+                <div key={cat.id}>
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#F7F5F2]">
+                    <span className="text-xs font-medium px-3 py-1 rounded-full"
+                      style={{ background: cat.bg, color: cat.text, border: `1px solid ${cat.border}` }}>{cat.name}</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => editingCatId === cat.id ? setEditingCatId(null) : startEdit(cat)}
+                        className="text-xs text-[#8C8880] hover:text-[#E8735A]">
+                        {editingCatId === cat.id ? "Cancel" : "Edit"}
+                      </button>
+                      <button onClick={() => removeCategory(cat.id)} className="text-xs text-red-400 hover:text-red-600">Remove</button>
+                    </div>
+                  </div>
+                  {editingCatId === cat.id && (
+                    <div className="bg-[#F7F5F2] rounded-xl p-4 flex flex-col gap-3 mt-1">
+                      <p className="text-xs font-semibold text-[#8C8880] uppercase tracking-wide">Edit Category</p>
+                      <CatColorForm
+                        name={editName} bg={editBg} text={editText} border={editBorder}
+                        bgTouched={editBgTouched} userEditedText={editUserEditedText} userEditedBorder={editUserEditedBorder}
+                        onNameChange={setEditName}
+                        onBgChange={hex => applyBgSuggest(hex, setEditBg, setEditText, setEditBorder, editUserEditedText, editUserEditedBorder, setEditBgTouched)}
+                        onTextChange={v => { setEditText(v); setEditUserEditedText(true); }}
+                        onBorderChange={v => { setEditBorder(v); setEditUserEditedBorder(true); }}
+                      />
+                      <button onClick={() => handleSaveEdit(cat.id)} disabled={!editName.trim() || saving}
+                        className="bg-[#E8735A] hover:bg-[#d4624a] disabled:opacity-40 text-white text-sm font-medium py-2 rounded-xl transition-colors">
+                        {saving ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
 
             <div className="bg-[#F7F5F2] rounded-xl p-4 flex flex-col gap-3">
               <p className="text-xs font-semibold text-[#8C8880] uppercase tracking-wide">New Category</p>
-              <input value={catName} onChange={e => setCatName(e.target.value)} placeholder="e.g. Biology, Economics, Work"
-                className="w-full text-sm bg-white rounded-lg px-3 py-2 outline-none border border-gray-200 focus:ring-2 focus:ring-[#E8735A]/40" />
-
-              <div className="flex gap-4 items-end flex-wrap">
-                <label className="flex flex-col gap-1 text-xs text-[#8C8880]">
-                  Background
-                  <input type="color" value={catBg} onChange={e => handleBgChange(e.target.value)}
-                    className="w-10 h-8 rounded cursor-pointer border-0" />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-[#8C8880]">
-                  <span className="flex items-center gap-1">
-                    Text {!userEditedText && bgTouched && <span className="text-[#E8735A] text-[10px]">auto</span>}
-                  </span>
-                  <input type="color" value={catText} onChange={e => handleTextChange(e.target.value)}
-                    className="w-10 h-8 rounded cursor-pointer border-0" />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-[#8C8880]">
-                  <span className="flex items-center gap-1">
-                    Border {!userEditedBorder && bgTouched && <span className="text-[#E8735A] text-[10px]">auto</span>}
-                  </span>
-                  <input type="color" value={catBorder} onChange={e => handleBorderChange(e.target.value)}
-                    className="w-10 h-8 rounded cursor-pointer border-0" />
-                </label>
-                <div className="flex flex-col gap-1 text-xs text-[#8C8880]">
-                  Preview
-                  <span className="text-xs font-medium px-3 py-1 rounded-full mt-1"
-                    style={{ background:catBg, color:catText, border:`1px solid ${catBorder}` }}>
-                    {catName || "Preview"}
-                  </span>
-                </div>
-              </div>
-
+              <CatColorForm
+                name={catName} bg={catBg} text={catText} border={catBorder}
+                bgTouched={bgTouched} userEditedText={userEditedText} userEditedBorder={userEditedBorder}
+                onNameChange={setCatName}
+                onBgChange={hex => applyBgSuggest(hex, setCatBg, setCatText, setCatBorder, userEditedText, userEditedBorder, setBgTouched)}
+                onTextChange={v => { setCatText(v); setUserEditedText(true); }}
+                onBorderChange={v => { setCatBorder(v); setUserEditedBorder(true); }}
+              />
               {bgTouched && !userEditedText && (
-                <p className="text-[11px] text-[#8C8880]">✨ Text & border colors auto-suggested from background. Edit them anytime.</p>
+                <p className="text-[11px] text-[#8C8880]">✨ Text & border colors auto-suggested from background.</p>
               )}
-
               <button onClick={handleAddCat} disabled={!catName.trim() || saving}
                 className="bg-[#E8735A] hover:bg-[#d4624a] disabled:opacity-40 text-white text-sm font-medium py-2 rounded-xl transition-colors">
                 {saving ? "Saving..." : "+ Add Category"}
@@ -386,7 +426,7 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes, prefill }) {
 }
 
 // ── Main TaskList ──────────────────────────────────────────────
-export default function TaskList({ tasks, updateTask, addTask, categories, addCategory, removeCategory, taskTypes, addTaskType, removeTaskType, onExcelImport }) {
+export default function TaskList({ tasks, updateTask, addTask, categories, addCategory, removeCategory, updateCategory, taskTypes, addTaskType, removeTaskType, onExcelImport }) {
   const [dateMode, setDateMode]             = useState("daysLeft");
   const [sortByCategory, setSortByCategory] = useState(false);
   const [showCompleted, setShowCompleted]   = useState(false);
@@ -506,7 +546,7 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
 
       {selectedTask && <TaskModal task={selectedTask} onClose={()=>setSelectedTask(null)} onSave={updateTask} onDuplicate={handleDuplicate} categories={categories} taskTypes={taskTypes}/>}
       {showAddTask && <AddTaskModal onClose={()=>{setShowAddTask(false);setDuplicatePrefill(null);}} onAdd={addTask} categories={categories} taskTypes={taskTypes} prefill={duplicatePrefill}/>}
-      {showManage && <ManageModal categories={categories} addCategory={addCategory} removeCategory={removeCategory} taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType} onClose={()=>setShowManage(false)}/>}
+      {showManage && <ManageModal categories={categories} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory} taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType} onClose={()=>setShowManage(false)}/>}
     </div>
   );
 }

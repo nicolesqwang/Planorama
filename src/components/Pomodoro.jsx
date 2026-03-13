@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-// ── Color helpers ───────────────────────────────────────────────
+// ── Color helpers ────────────────────────────────────────────────
 function hexToHsl(hex) {
   let r = parseInt(hex.slice(1,3),16)/255;
   let g = parseInt(hex.slice(3,5),16)/255;
@@ -53,34 +53,58 @@ function shiftLightness(hex, delta) {
   return hslToHex(h, s, Math.max(5, Math.min(95, l + delta)));
 }
 
-// ── Constants ───────────────────────────────────────────────────
+// ── Constants ────────────────────────────────────────────────────
 const MODES = {
   pomodoro:   { label: "Pomodoro",    default: 25, max: 60 },
   shortBreak: { label: "Short Break", default: 5,  max: 30 },
   longBreak:  { label: "Long Break",  default: 15, max: 60 },
 };
 
-const COLOR_PRESETS = [
-  { name: "Coral",    hex: "#E8735A" },
-  { name: "Ocean",    hex: "#4A7FB5" },
-  { name: "Forest",   hex: "#4A8C5C" },
-  { name: "Lavender", hex: "#7B68C8" },
-  { name: "Slate",    hex: "#4A5568" },
-  { name: "Sunset",   hex: "#D4845A" },
-  { name: "Teal",     hex: "#3B8E8E" },
-  { name: "Rose",     hex: "#C26B8A" },
+const DEFAULT_COLORS = [
+  { id: "baby-pink", hex: "#F9C4CF", name: "Baby Pink" },
+  { id: "plum",      hex: "#4D1F5A", name: "Plum" },
+  { id: "navy",      hex: "#1D3557", name: "Navy" },
+  { id: "mint",      hex: "#D4EDD4", name: "Mint" },
+  { id: "cyan",      hex: "#9CF6F6", name: "Cyan" },
+  { id: "yellow",    hex: "#FFF07C", name: "Yellow" },
+  { id: "red",       hex: "#BF4342", name: "Red" },
 ];
 
-// ── Pomodoro ────────────────────────────────────────────────────
-export default function Pomodoro() {
-  const [mode, setMode]             = useState("pomodoro");
-  const [durations, setDurations]   = useState({ pomodoro: 25, shortBreak: 5, longBreak: 15 });
+function loadSavedColors() {
+  try { return JSON.parse(localStorage.getItem("pomo_colors") || "null") || DEFAULT_COLORS; }
+  catch { return DEFAULT_COLORS; }
+}
+
+function loadBgImages() {
+  try { return JSON.parse(localStorage.getItem("pomo_images") || "[]"); }
+  catch { return []; }
+}
+
+// ── Pomodoro ─────────────────────────────────────────────────────
+export default function Pomodoro({ tasks = [] }) {
+  const [mode, setMode]               = useState("pomodoro");
+  const [durations, setDurations]     = useState({ pomodoro: 25, shortBreak: 5, longBreak: 15 });
   const [secondsLeft, setSecondsLeft] = useState(25 * 60);
-  const [running, setRunning]       = useState(false);
-  const [editing, setEditing]       = useState(false);
-  const [editValue, setEditValue]   = useState("");
-  const [bgColor, setBgColor]       = useState("#E8735A");
-  const [showPalette, setShowPalette] = useState(false);
+  const [running, setRunning]         = useState(false);
+  const [editing, setEditing]         = useState(false);
+  const [editValue, setEditValue]     = useState("");
+
+  // Theme
+  const [bgColor, setBgColor]         = useState("#F9C4CF");
+  const [bgImage, setBgImage]         = useState(() => localStorage.getItem("pomo_bg_image") || null);
+  const [savedColors, setSavedColors] = useState(loadSavedColors);
+  const [bgImages, setBgImages]       = useState(loadBgImages);
+
+  // Palette UI
+  const [showPalette, setShowPalette]       = useState(false);
+  const [editingPalette, setEditingPalette] = useState(false);
+  const [paletteTab, setPaletteTab]         = useState("colors");
+  const [customColor, setCustomColor]       = useState("#ffffff");
+
+  // Quick checklist
+  const [quickNotes, setQuickNotes] = useState([]);
+  const [quickInput, setQuickInput] = useState("");
+  const [checked, setChecked]       = useState({});
 
   // Timer tick
   useEffect(() => {
@@ -90,10 +114,16 @@ export default function Pomodoro() {
     return () => clearInterval(id);
   }, [running, secondsLeft]);
 
+  // Persist
+  useEffect(() => { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); }, [savedColors]);
+  useEffect(() => { localStorage.setItem("pomo_images", JSON.stringify(bgImages)); }, [bgImages]);
+  useEffect(() => {
+    if (bgImage) localStorage.setItem("pomo_bg_image", bgImage);
+    else localStorage.removeItem("pomo_bg_image");
+  }, [bgImage]);
+
   function switchMode(m) {
-    setMode(m);
-    setRunning(false);
-    setEditing(false);
+    setMode(m); setRunning(false); setEditing(false);
     setSecondsLeft(durations[m] * 60);
   }
 
@@ -114,11 +144,48 @@ export default function Pomodoro() {
     setEditing(false);
   }
 
-  function reset() {
-    setRunning(false);
-    setEditing(false);
-    setSecondsLeft(durations[mode] * 60);
+  function reset() { setRunning(false); setEditing(false); setSecondsLeft(durations[mode] * 60); }
+
+  function addCustomColor() {
+    const id = `custom-${Date.now()}`;
+    setSavedColors(p => [...p, { id, hex: customColor, name: "My color" }]);
+    setBgColor(customColor);
+    setBgImage(null);
+    setShowPalette(false);
   }
+
+  function deleteColor(id) { setSavedColors(p => p.filter(c => c.id !== id)); }
+
+  function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const url = ev.target.result;
+      const newImgs = [...bgImages, { id: `img-${Date.now()}`, url, name: file.name }];
+      setBgImages(newImgs);
+      setBgImage(url);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  function deleteImage(id) {
+    const img = bgImages.find(i => i.id === id);
+    if (img && bgImage === img.url) setBgImage(null);
+    setBgImages(p => p.filter(i => i.id !== id));
+  }
+
+  // Top 3 upcoming tasks
+  const upcomingTasks = tasks
+    .filter(t => !t.done && t.due_date)
+    .sort((a,b) => new Date(`${a.due_date}T${a.due_time||"23:59"}`) - new Date(`${b.due_date}T${b.due_time||"23:59"}`))
+    .slice(0, 3);
+
+  const checklistItems = [
+    ...upcomingTasks.map(t => ({ id: t.id, label: t.name, dueDate: t.due_date })),
+    ...quickNotes.map(n => ({ id: n.id, label: n.label, dueDate: null })),
+  ];
 
   // Derived display
   const mins = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
@@ -126,163 +193,267 @@ export default function Pomodoro() {
   const done = secondsLeft === 0;
 
   // Color system
-  const isDark     = getLuminance(bgColor) < 0.4;
+  const isDark     = bgImage ? true : getLuminance(bgColor) < 0.4;
   const textColor  = isDark ? "#FFFFFF" : "#1C1B19";
   const mutedColor = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.45)";
   const tabActive  = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.14)";
-  const cardBg     = isDark ? shiftLightness(bgColor, -6) : shiftLightness(bgColor, 6);
+  const cardBg     = bgImage
+    ? "rgba(255,255,255,0.18)"
+    : (isDark ? shiftLightness(bgColor, -6) : shiftLightness(bgColor, 6));
   const startBg    = isDark ? "#FFFFFF" : "#1C1B19";
   const startText  = isDark ? bgColor   : "#FFFFFF";
   const resetBorder = isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)";
+  const panelBg    = isDark ? "rgba(20,10,25,0.88)" : "rgba(255,255,255,0.95)";
+  const panelText  = isDark ? "#fff" : "#1C1B19";
+
+  const bgStyle = bgImage
+    ? { backgroundImage: `url(${bgImage})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: bgColor };
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center font-sans relative transition-colors duration-500 select-none"
-      style={{ background: bgColor }}
+      className="min-h-screen flex flex-col items-center justify-center font-sans relative transition-colors duration-500 select-none pb-12"
+      style={bgStyle}
       onMouseDown={() => showPalette && setShowPalette(false)}
     >
-      {/* Palette button */}
-      <div className="absolute top-6 right-8" onMouseDown={e => e.stopPropagation()}>
+      {/* Top-right buttons */}
+      <div className="absolute top-6 right-8 flex gap-2" onMouseDown={e => e.stopPropagation()}>
+        {/* Image upload */}
+        <label
+          className="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-opacity hover:opacity-80 cursor-pointer"
+          style={{ background: tabActive, color: textColor }}
+          title="Upload background image"
+        >
+          🖼
+          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+        </label>
+
+        {/* Color palette toggle */}
         <button
           onClick={() => setShowPalette(p => !p)}
           className="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-opacity hover:opacity-80"
           style={{ background: tabActive, color: textColor }}
-          title="Customize theme color"
+          title="Customize theme"
         >
           🎨
         </button>
 
+        {/* Palette panel */}
         {showPalette && (
           <div
-            className="absolute right-0 top-12 rounded-2xl shadow-2xl p-4 w-60 z-50"
-            style={{ background: cardBg }}
+            className="absolute right-0 top-12 rounded-2xl shadow-2xl p-4 w-72 z-50"
+            style={{ background: panelBg, backdropFilter: "blur(16px)" }}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: mutedColor }}>
-              Theme Color
-            </p>
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {COLOR_PRESETS.map(p => (
-                <button
-                  key={p.hex}
-                  onClick={() => { setBgColor(p.hex); setShowPalette(false); }}
-                  title={p.name}
-                  className="w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center"
+            {/* Tab bar + Edit toggle */}
+            <div className="flex items-center gap-1 mb-3">
+              {["colors","images"].map(t => (
+                <button key={t} onClick={() => setPaletteTab(t)}
+                  className="px-3 py-1 rounded-full text-xs capitalize font-medium transition-all"
                   style={{
-                    background: p.hex,
-                    borderColor: bgColor === p.hex ? textColor : "transparent",
+                    background: paletteTab === t ? panelText : "transparent",
+                    color: paletteTab === t ? panelBg : mutedColor
                   }}
-                >
-                  {bgColor === p.hex && (
-                    <span className="text-xs font-bold" style={{ color: getLuminance(p.hex) < 0.4 ? "#fff" : "#000" }}>✓</span>
-                  )}
-                </button>
+                >{t}</button>
               ))}
+              <button
+                onClick={() => setEditingPalette(p => !p)}
+                className="ml-auto text-xs px-2 py-1 rounded-full transition-all"
+                style={{ color: mutedColor }}
+              >{editingPalette ? "Done" : "Edit"}</button>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs flex-1" style={{ color: mutedColor }}>Custom</span>
-              <input
-                type="color"
-                value={bgColor}
-                onChange={e => setBgColor(e.target.value)}
-                className="w-10 h-8 rounded cursor-pointer border-0"
-              />
-            </div>
+
+            {paletteTab === "colors" && (
+              <>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {savedColors.map(c => (
+                    <div key={c.id} className="relative flex items-center justify-center">
+                      <button
+                        onClick={() => { if (!editingPalette) { setBgColor(c.hex); setBgImage(null); setShowPalette(false); }}}
+                        title={c.name}
+                        className="w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center"
+                        style={{ background: c.hex, borderColor: !bgImage && bgColor === c.hex ? panelText : "transparent" }}
+                      >
+                        {!bgImage && bgColor === c.hex && !editingPalette && (
+                          <span style={{ color: getLuminance(c.hex) < 0.4 ? "#fff" : "#000", fontSize: "11px", fontWeight: 700 }}>✓</span>
+                        )}
+                      </button>
+                      {editingPalette && (
+                        <button onClick={() => deleteColor(c.id)}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center z-10"
+                          style={{ fontSize: "10px", lineHeight: 1 }}>×</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 pt-2" style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}` }}>
+                  <span className="text-xs flex-1" style={{ color: mutedColor }}>Add custom</span>
+                  <input type="color" value={customColor} onChange={e => setCustomColor(e.target.value)}
+                    className="w-10 h-8 rounded cursor-pointer border-0" />
+                  <button onClick={addCustomColor}
+                    className="text-xs px-2.5 py-1 rounded-lg font-medium"
+                    style={{ background: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)", color: panelText }}>
+                    + Add
+                  </button>
+                </div>
+              </>
+            )}
+
+            {paletteTab === "images" && (
+              <>
+                {bgImages.length === 0 && (
+                  <p className="text-xs mb-3" style={{ color: mutedColor }}>No saved images. Use the 🖼 button to upload one.</p>
+                )}
+                <div className="grid grid-cols-2 gap-2 mb-3 max-h-44 overflow-y-auto">
+                  {bgImages.map(img => (
+                    <div key={img.id} className="relative">
+                      <button
+                        onClick={() => { if (!editingPalette) { setBgImage(img.url); setShowPalette(false); }}}
+                        className="w-full h-16 rounded-xl overflow-hidden border-2 transition-all"
+                        style={{ borderColor: bgImage === img.url ? panelText : "transparent" }}
+                      >
+                        <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                      </button>
+                      {editingPalette && (
+                        <button onClick={() => deleteImage(img.id)}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center z-10"
+                          style={{ fontSize: "10px" }}>×</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {bgImage && (
+                  <button onClick={() => setBgImage(null)}
+                    className="w-full text-xs py-1.5 rounded-lg transition-all"
+                    style={{ background: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)", color: panelText }}>
+                    Remove background image
+                  </button>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
 
       {/* Mode tabs */}
-      <div className="flex gap-1 rounded-2xl p-1 mb-10" style={{ background: "rgba(0,0,0,0.1)" }}>
+      <div className="flex gap-1 rounded-2xl p-1 mb-10" style={{ background: "rgba(0,0,0,0.12)" }}>
         {Object.entries(MODES).map(([key, { label }]) => (
-          <button
-            key={key}
-            onClick={() => switchMode(key)}
+          <button key={key} onClick={() => switchMode(key)}
             className="px-5 py-2 rounded-xl text-sm font-medium transition-all"
-            style={{
-              background: mode === key ? tabActive : "transparent",
-              color: textColor,
-              fontWeight: mode === key ? 600 : 400,
-            }}
-          >
-            {label}
-          </button>
+            style={{ background: mode === key ? tabActive : "transparent", color: textColor, fontWeight: mode === key ? 600 : 400 }}
+          >{label}</button>
         ))}
       </div>
 
       {/* Timer card */}
       <div
-        className="rounded-3xl px-16 py-12 flex flex-col items-center shadow-lg"
+        className="rounded-3xl px-16 py-12 flex flex-col items-center shadow-lg backdrop-blur-sm"
         style={{ background: cardBg }}
       >
-        {/* Timer display */}
-        <div
-          className="mb-8 flex flex-col items-center"
-          onDoubleClick={handleDoubleClick}
+        <div className="mb-8 flex flex-col items-center" onDoubleClick={handleDoubleClick}
           title={!running ? `Double-click to edit · max ${MODES[mode].max} min` : undefined}
         >
           {editing ? (
             <div className="flex items-end gap-2">
-              <input
-                autoFocus
-                type="number"
-                min="1"
-                max={MODES[mode].max}
-                value={editValue}
+              <input autoFocus type="number" min="1" max={MODES[mode].max} value={editValue}
                 onChange={e => setEditValue(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") commitEdit();
-                  if (e.key === "Escape") { setEditing(false); }
-                }}
+                onKeyDown={e => { if (e.key==="Enter") commitEdit(); if (e.key==="Escape") setEditing(false); }}
                 onBlur={commitEdit}
                 className="text-center bg-transparent border-b-2 outline-none w-36 font-bold"
-                style={{ color: textColor, borderColor: textColor, fontSize: "5rem", lineHeight: 1 }}
-              />
+                style={{ color: textColor, borderColor: textColor, fontSize: "5rem", lineHeight: 1 }} />
               <span className="text-2xl font-medium mb-3" style={{ color: mutedColor }}>min</span>
             </div>
           ) : (
-            <span
-              className="font-bold tabular-nums"
-              style={{ color: textColor, fontSize: "6rem", lineHeight: 1, cursor: running ? "default" : "text", letterSpacing: "-2px" }}
-            >
+            <span className="font-bold tabular-nums"
+              style={{ color: textColor, fontSize: "6rem", lineHeight: 1, cursor: running ? "default" : "text", letterSpacing: "-2px" }}>
               {mins}:{secs}
             </span>
           )}
-          {done && (
-            <p className="text-sm font-medium mt-3" style={{ color: textColor }}>
-              Time&apos;s up! Great work 🎉
-            </p>
-          )}
+          {done && <p className="text-sm font-medium mt-3" style={{ color: textColor }}>Time&apos;s up! Great work 🎉</p>}
           {!running && !editing && !done && (
-            <p className="text-xs mt-2" style={{ color: mutedColor }}>
-              Double-click to edit · max {MODES[mode].max} min
-            </p>
+            <p className="text-xs mt-2" style={{ color: mutedColor }}>Double-click to edit · max {MODES[mode].max} min</p>
           )}
         </div>
 
-        {/* Controls */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => { setRunning(r => !r); setEditing(false); }}
+          <button onClick={() => { setRunning(r => !r); setEditing(false); }}
             className="px-12 py-3 rounded-2xl font-bold uppercase tracking-widest text-sm shadow transition-all hover:opacity-90 active:scale-95"
-            style={{ background: startBg, color: startText }}
-          >
+            style={{ background: startBg, color: startText }}>
             {running ? "Pause" : done ? "Restart" : "Start"}
           </button>
-          <button
-            onClick={reset}
+          <button onClick={reset}
             className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg transition-all hover:opacity-80"
-            style={{ color: textColor, border: `2px solid ${resetBorder}` }}
-            title="Reset"
-          >
+            style={{ color: textColor, border: `2px solid ${resetBorder}` }} title="Reset">
             ↺
           </button>
         </div>
       </div>
 
-      {/* Session label */}
       <p className="mt-6 text-sm" style={{ color: mutedColor }}>
         {mode === "pomodoro" ? "Focus session · stay off your phone!" : "Take a breather 🌿"}
       </p>
+
+      {/* Quick checklist */}
+      <div className="mt-8 w-80 rounded-2xl p-4 backdrop-blur-sm" style={{ background: cardBg }}>
+        <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: mutedColor }}>Up Next</p>
+
+        {checklistItems.length === 0 && (
+          <p className="text-xs mb-2" style={{ color: mutedColor }}>No upcoming tasks — add a quick note below.</p>
+        )}
+
+        {checklistItems.map(item => {
+          const isChecked = !!checked[item.id];
+          const daysLeft = item.dueDate
+            ? Math.ceil((new Date(`${item.dueDate}T23:59:00`) - new Date()) / (1000*60*60*24))
+            : null;
+          return (
+            <div key={item.id} className="flex items-center gap-2 py-1.5">
+              <button
+                onClick={() => setChecked(c => ({ ...c, [item.id]: !c[item.id] }))}
+                className="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                style={{ borderColor: isChecked ? textColor : mutedColor, background: isChecked ? textColor : "transparent" }}>
+                {isChecked && <span style={{ color: isDark ? "#000" : "#fff", fontSize: "9px", lineHeight: 1 }}>✓</span>}
+              </button>
+              <span className="text-sm flex-1 truncate"
+                style={{ color: isChecked ? mutedColor : textColor, textDecoration: isChecked ? "line-through" : "none" }}>
+                {item.label}
+              </span>
+              {daysLeft !== null && (
+                <span className="text-xs flex-shrink-0" style={{ color: mutedColor }}>
+                  {daysLeft <= 0 ? "today" : `${daysLeft}d`}
+                </span>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Add quick note */}
+        <div className="flex items-center gap-2 mt-2 pt-2"
+          style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}` }}>
+          <span style={{ color: mutedColor, fontSize: "14px" }}>+</span>
+          <input
+            type="text"
+            value={quickInput}
+            onChange={e => setQuickInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && quickInput.trim()) {
+                setQuickNotes(n => [...n, { id: `q-${Date.now()}`, label: quickInput.trim() }]);
+                setQuickInput("");
+              }
+            }}
+            placeholder="Quick note (not saved)"
+            className="flex-1 bg-transparent text-sm outline-none"
+            style={{ color: textColor }}
+          />
+          {quickInput.trim() && (
+            <button
+              onClick={() => { setQuickNotes(n => [...n, { id: `q-${Date.now()}`, label: quickInput.trim() }]); setQuickInput(""); }}
+              className="text-xs px-2 py-0.5 rounded-lg"
+              style={{ background: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)", color: textColor }}>
+              Add
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

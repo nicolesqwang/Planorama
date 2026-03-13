@@ -298,6 +298,13 @@ export default function App() {
     setCatsState(p => p.filter(c => c.id !== id));
   }
 
+  async function updateCategory(id, updates) {
+    const { data, error } = await supabase.from("categories")
+      .update({ name: updates.name, bg: updates.bg, text_color: updates.text, border: updates.border })
+      .eq("id", id).select().single();
+    if (!error) setCatsState(p => p.map(c => c.id === id ? data : c));
+  }
+
   async function addTaskType(name) {
     const { data, error } = await supabase.from("task_types").insert({ user_id: session.user.id, name }).select().single();
     if (!error) setTTState(p => [...p, data]);
@@ -391,10 +398,10 @@ export default function App() {
           eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
           onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
       )}
-      {page === "pomodoro" && <Pomodoro />}
+      {page === "pomodoro" && <Pomodoro tasks={tasks} />}
       {page === "tasks" && (
         <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
-          categories={normCats} addCategory={addCategory} removeCategory={removeCategory}
+          categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
           taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
           onExcelImport={handleExcelImport} />
       )}
