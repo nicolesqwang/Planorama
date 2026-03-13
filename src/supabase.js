@@ -1,11 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-```
-
-**Step 3 — add `.env` to `.gitignore`** so your keys don't go public. Open `.gitignore` and add:
-```
-.env
+export const supabase = createClient(
+  "https://ymyhlpsezjbkgyzlawuq.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlteWhscHNlempia2d5emxhd3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMDM1MjYsImV4cCI6MjA4ODc3OTUyNn0.WElsxEzfR5e2Yf-K6-Cgh7mAnOWvKoeSR7csMNa1plk"
+);
