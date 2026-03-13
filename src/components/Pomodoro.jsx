@@ -81,7 +81,7 @@ function loadBgImages() {
 }
 
 // ── Pomodoro ─────────────────────────────────────────────────────
-export default function Pomodoro({ tasks = [] }) {
+export default function Pomodoro({ tasks = [], updateTask }) {
   const [mode, setMode]               = useState("pomodoro");
   const [durations, setDurations]     = useState({ pomodoro: 25, shortBreak: 5, longBreak: 15 });
   const [secondsLeft, setSecondsLeft] = useState(25 * 60);
@@ -114,12 +114,14 @@ export default function Pomodoro({ tasks = [] }) {
     return () => clearInterval(id);
   }, [running, secondsLeft]);
 
-  // Persist
-  useEffect(() => { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); }, [savedColors]);
-  useEffect(() => { localStorage.setItem("pomo_images", JSON.stringify(bgImages)); }, [bgImages]);
+  // Persist — wrap in try/catch; large images may exceed localStorage quota
+  useEffect(() => { try { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); } catch {} }, [savedColors]);
+  useEffect(() => { try { localStorage.setItem("pomo_images", JSON.stringify(bgImages)); } catch {} }, [bgImages]);
   useEffect(() => {
-    if (bgImage) localStorage.setItem("pomo_bg_image", bgImage);
-    else localStorage.removeItem("pomo_bg_image");
+    try {
+      if (bgImage) localStorage.setItem("pomo_bg_image", bgImage);
+      else localStorage.removeItem("pomo_bg_image");
+    } catch {}
   }, [bgImage]);
 
   function switchMode(m) {
@@ -401,14 +403,25 @@ export default function Pomodoro({ tasks = [] }) {
         )}
 
         {checklistItems.map(item => {
+          const isRealTask = !String(item.id).startsWith("q-");
           const isChecked = !!checked[item.id];
           const daysLeft = item.dueDate
             ? Math.ceil((new Date(`${item.dueDate}T23:59:00`) - new Date()) / (1000*60*60*24))
             : null;
+
+          function handleCheck() {
+            if (isRealTask && updateTask) {
+              // Mark done in DB — it will drop off upcomingTasks on next render
+              updateTask(item.id, { done: true });
+            } else {
+              setChecked(c => ({ ...c, [item.id]: !c[item.id] }));
+            }
+          }
+
           return (
             <div key={item.id} className="flex items-center gap-2 py-1.5">
               <button
-                onClick={() => setChecked(c => ({ ...c, [item.id]: !c[item.id] }))}
+                onClick={handleCheck}
                 className="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all"
                 style={{ borderColor: isChecked ? textColor : mutedColor, background: isChecked ? textColor : "transparent" }}>
                 {isChecked && <span style={{ color: isDark ? "#000" : "#fff", fontSize: "9px", lineHeight: 1 }}>✓</span>}

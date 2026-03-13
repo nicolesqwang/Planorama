@@ -109,6 +109,24 @@ function CatColorForm({ name, bg, text, border, onNameChange, onBgChange, onText
           </span>
         </div>
       </div>
+      {bgTouched && (!userEditedText || !userEditedBorder) && (
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-orange-50 border border-[#E8735A]/20">
+          <span className="text-[11px] text-[#8C8880]">✨ Suggested from background:</span>
+          {!userEditedText && (
+            <span className="flex items-center gap-1 text-[11px] text-[#8C8880]">
+              <span className="w-3.5 h-3.5 rounded-full border border-gray-300 inline-block" style={{ background: text }} />
+              text
+            </span>
+          )}
+          {!userEditedBorder && (
+            <span className="flex items-center gap-1 text-[11px] text-[#8C8880]">
+              <span className="w-3.5 h-3.5 rounded-full border border-gray-300 inline-block" style={{ background: border }} />
+              border
+            </span>
+          )}
+          <span className="text-[10px] text-[#8C8880] ml-auto">Edit the pickers above to override</span>
+        </div>
+      )}
     </>
   );
 }

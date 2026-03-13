@@ -398,7 +398,7 @@ export default function App() {
           eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
           onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
       )}
-      {page === "pomodoro" && <Pomodoro tasks={tasks} />}
+      {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} />}
       {page === "tasks" && (
         <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
           categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
