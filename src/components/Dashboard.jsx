@@ -9,75 +9,236 @@ function getTimeLeft(dueDate, dueTime) {
   const diffMs = due - now;
   const diffMins = diffMs / (1000 * 60);
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
   if (diffMins > 0 && diffMins <= 90) {
     return { value: Math.round(diffMins), unit: "min", raw: diffDays };
   }
   return { value: Math.round(diffDays * 10) / 10, unit: "days", raw: diffDays };
 }
+
 function getUrgencyStyle(rawDays) {
-  if (rawDays < 0)        return "bg-red-50 text-red-600 font-semibold";
-  if (rawDays <= 1/24)    return "bg-orange-50 text-orange-500 font-semibold"; // ≤1hr
-  if (rawDays <= 5/1440)  return "bg-orange-50 text-orange-500 font-semibold"; // catch-all for mins
-  if (rawDays <= 1)       return "bg-orange-50 text-orange-500 font-semibold";
-  if (rawDays <= 5)       return "bg-yellow-50 text-yellow-600";
+  if (rawDays < 0)       return "bg-red-50 text-red-600 font-semibold";
+  if (rawDays <= 1/24)   return "bg-orange-50 text-orange-500 font-semibold";
+  if (rawDays <= 5/1440) return "bg-orange-50 text-orange-500 font-semibold";
+  if (rawDays <= 1)      return "bg-orange-50 text-orange-500 font-semibold";
+  if (rawDays <= 5)      return "bg-yellow-50 text-yellow-600";
   return "bg-green-50 text-green-700";
 }
+
 function getCatStyle(catName, categories) {
   return categories.find(c => c.name === catName) || { bg: "#F2F3F4", text: "#717D7E", border: "#CCD1D1" };
 }
 
-// ── Event Detail Modal ─────────────────────────────────────────
-function EventModal({ item, onClose, categories, isTask, onSaveTask }) {
-  const [notes, setNotes]   = useState(item.notes || "");
-  const [dueTime, setDueTime] = useState(item.due_time || item.time || "23:59");
-  const date     = isTask ? item.due_date : item.date;
-  const { value, unit, raw } = getTimeLeft(date, dueTime);
-  const cats     = isTask ? (item.categories || []) : [item.category];
+// ── Stat List Modal ─────────────────────────────────────────────
+function StatListModal({ title, items, categories, onClose, onSelectItem }) {
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-[500px] max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+          <h2 className="text-base font-semibold text-[#1C1B19]">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+        <div className="overflow-y-auto flex-1">
+          {items.length === 0 && (
+            <p className="text-sm text-[#8C8880] px-6 py-10 text-center">Nothing here — you&apos;re all clear! 🎉</p>
+          )}
+          {items.map(item => {
+            const date = item._date;
+            const time = item._time;
+            const { raw } = getTimeLeft(date, time || "23:59");
+            const catName = item._type === "task" ? item.categories?.[0] : item.category;
+            const s = getCatStyle(catName, categories);
+            return (
+              <div key={`${item._type}-${item.id}`}
+                onClick={() => onSelectItem(item)}
+                className="px-6 py-4 border-b border-gray-50 flex items-center justify-between hover:bg-[#FAFAF8] cursor-pointer transition-colors">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-medium text-[#1C1B19] truncate">{item.name}</span>
+                  <span className="text-xs text-[#8C8880]">
+                    {new Date(date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                    {time && ` · ${time}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  {catName && (
+                    <span className="text-xs font-medium px-2.5 py-0.5 rounded-full"
+                      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>{catName}</span>
+                  )}
+                  <span className={`text-xs px-2 py-0.5 rounded-md ${getUrgencyStyle(raw)}`}>
+                    {raw < 0 ? `${Math.abs(Math.round(raw))}d ago` : `${Math.round(Math.max(raw,0))}d`}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Event / Task Detail Modal ───────────────────────────────────
+function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask, onSaveTask }) {
+  const [name, setName]         = useState(item.name);
+  const [dueDate, setDueDate]   = useState(isTask ? (item.due_date || "") : (item.date || ""));
+  const [dueTime, setDueTime]   = useState(item.due_time || item.time || "23:59");
+  const [selCats, setSelCats]   = useState(isTask ? (item.categories || []) : []);
+  const [selTypes, setSelTypes] = useState(isTask ? (item.types || []) : []);
+  const [notes, setNotes]       = useState(item.notes || "");
+
+  const date = isTask ? dueDate : (item.date || "");
+  const { value, unit, raw } = getTimeLeft(date || new Date().toISOString().split("T")[0], dueTime);
+  const canSave = isTask ? (name.trim() && dueDate && selCats.length > 0) : true;
+
+  function toggleCat(c)  { setSelCats(s  => s.includes(c) ? s.filter(x=>x!==c) : [...s,c]); }
+  function toggleType(t) { setSelTypes(s => s.includes(t) ? s.filter(x=>x!==t) : [...s,t]); }
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-[460px] p-6 relative" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
-        <div className="flex items-center gap-2 mb-3">
+      <div className="bg-white rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-3">
+          {onBack ? (
+            <button onClick={onBack}
+              className="text-sm text-[#8C8880] hover:text-[#1C1B19] flex items-center gap-1 transition-colors">
+              ← Back
+            </button>
+          ) : <div />}
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+        </div>
+
+        {/* Badges */}
+        <div className="flex items-center gap-2 mb-4">
           <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${isTask ? "bg-blue-100 text-blue-600" : "bg-purple-100 text-purple-600"}`}>
             {isTask ? "Task" : "Event"}
           </span>
-            <span className={`text-xs px-3 py-0.5 rounded-full ${getUrgencyStyle(raw)}`}>
+          <span className={`text-xs px-3 py-0.5 rounded-full ${getUrgencyStyle(raw)}`}>
             {raw < 0
-                ? `${Math.abs(Math.round(raw * 10)/10)} days overdue`
-                : unit === "min" ? `${value} min left` : `${value} days left`}
-            </span>
+              ? `${Math.abs(Math.round(raw * 10)/10)} days overdue`
+              : unit === "min" ? `${value} min left` : `${value} days left`}
+          </span>
         </div>
-        <h2 className="text-lg font-semibold text-[#1C1B19] mb-4">{item.name}</h2>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {cats.map(c => { const s = getCatStyle(c, categories); return (
-            <span key={c} className="text-xs font-medium px-2.5 py-0.5 rounded-full"
-              style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>{c}</span>
-          );})}
-          {!isTask && (item.event_types || []).map(t => (
-            <span key={t} className="text-xs px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-600">{t}</span>
-          ))}
+
+        <div className="flex flex-col gap-4">
+          {/* Name */}
+          <div>
+            <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">
+              {isTask ? "Task" : "Event"} Name
+            </label>
+            {isTask ? (
+              <input value={name} onChange={e => setName(e.target.value)}
+                className="w-full text-sm bg-[#F7F5F2] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#E8735A]/40" />
+            ) : (
+              <p className="text-base font-semibold text-[#1C1B19]">{item.name}</p>
+            )}
+          </div>
+
+          {/* Date + Time */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">
+                {isTask ? "Due Date" : "Date"}
+              </label>
+              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} disabled={!isTask}
+                className="w-full text-sm bg-[#F7F5F2] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#E8735A]/40 disabled:opacity-60" />
+            </div>
+            <div className="w-36">
+              <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">Time</label>
+              <input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)}
+                className="w-full text-sm bg-[#F7F5F2] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#E8735A]/40" />
+            </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">
+              Category {isTask && <span className="text-[#E8735A]">*</span>}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {isTask ? (
+                categories.map(c => (
+                  <button key={c.name} onClick={() => toggleCat(c.name)}
+                    className="text-xs font-medium px-3 py-1 rounded-full border transition-all"
+                    style={selCats.includes(c.name)
+                      ? { background: c.bg, color: c.text, borderColor: c.border }
+                      : { background: "white", color: "#8C8880", borderColor: "#E5E2DE" }}>
+                    {c.name}
+                  </button>
+                ))
+              ) : (
+                item.category && (() => {
+                  const s = getCatStyle(item.category, categories);
+                  return (
+                    <span className="text-xs font-medium px-2.5 py-0.5 rounded-full"
+                      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>
+                      {item.category}
+                    </span>
+                  );
+                })()
+              )}
+            </div>
+            {isTask && selCats.length === 0 && <p className="text-xs text-[#E8735A] mt-1">Please select at least one category</p>}
+          </div>
+
+          {/* Task types */}
+          {isTask && taskTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">
+                Type <span className="normal-case font-normal">(optional)</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {taskTypes.map(t => (
+                  <button key={t.id} onClick={() => toggleType(t.name)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[#1C1B19] text-white border-[#1C1B19]" : "bg-white text-[#8C8880] border-[#E5E2DE]"}`}>
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Event types (display only) */}
+          {!isTask && (item.event_types || []).length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">Event Type</label>
+              <div className="flex flex-wrap gap-2">
+                {(item.event_types || []).map(t => (
+                  <span key={t} className="text-xs px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-600">{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Duration (events) */}
+          {!isTask && item.duration && (
+            <div className="flex items-center gap-2 text-sm text-[#8C8880]">
+              <span>⏱</span><span>{item.duration}</span>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">Notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add notes..."
+              className="w-full h-20 text-sm bg-[#F7F5F2] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#E8735A]/40" />
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[#8C8880] mb-4">
-          <span>📅</span>
-          <span>{new Date(date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
-          <span>·</span><span>{dueTime}</span>
-          {!isTask && item.duration && <span className="ml-1 text-xs bg-[#EFEDE9] px-2 py-0.5 rounded-full">{item.duration}</span>}
-        </div>
-        <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">Notes</label>
-        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add notes..."
-          className="w-full h-20 text-sm bg-[#F7F5F2] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#E8735A]/40 mb-4" />
-        <button onClick={() => { if (isTask) onSaveTask(item.id, { notes, dueTime }); onClose(); }}
-          className="w-full bg-[#E8735A] hover:bg-[#d4624a] text-white text-sm font-medium py-2 rounded-xl transition-colors">
-          {isTask ? "Save" : "Close"}
+
+        <button
+          onClick={() => {
+            if (isTask) onSaveTask(item.id, { name, dueDate, dueTime, categories: selCats, types: selTypes, notes });
+            onClose();
+          }}
+          disabled={!canSave}
+          className="mt-5 w-full bg-[#E8735A] hover:bg-[#d4624a] disabled:opacity-40 text-white text-sm font-medium py-2 rounded-xl transition-colors">
+          {isTask ? "Save Changes" : "Close"}
         </button>
       </div>
     </div>
   );
 }
 
-// ── Add Event Modal ────────────────────────────────────────────
+// ── Add Event Modal ─────────────────────────────────────────────
 function AddEventModal({ onClose, onAdd, categories, eventTypes, addEventType, removeEventType }) {
   const [name, setName]         = useState("");
   const [date, setDate]         = useState("");
@@ -176,15 +337,17 @@ function AddEventModal({ onClose, onAdd, categories, eventTypes, addEventType, r
   );
 }
 
-// ── Add Task Modal (dashboard) ─────────────────────────────────
-function AddTaskModal({ onClose, onAdd, categories }) {
-  const [name, setName]       = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [dueTime, setDueTime] = useState("23:59");
-  const [selCats, setSelCats] = useState([]);
-  const [notes, setNotes]     = useState("");
+// ── Add Task Modal (dashboard) ──────────────────────────────────
+function AddTaskModal({ onClose, onAdd, categories, taskTypes = [] }) {
+  const [name, setName]         = useState("");
+  const [dueDate, setDueDate]   = useState("");
+  const [dueTime, setDueTime]   = useState("23:59");
+  const [selCats, setSelCats]   = useState([]);
+  const [selTypes, setSelTypes] = useState([]);
+  const [notes, setNotes]       = useState("");
   const canSubmit = name.trim() && dueDate && selCats.length > 0;
-  function toggleCat(c) { setSelCats(s => s.includes(c) ? s.filter(x => x !== c) : [...s, c]); }
+  function toggleCat(c)  { setSelCats(s  => s.includes(c) ? s.filter(x=>x!==c) : [...s,c]); }
+  function toggleType(t) { setSelTypes(s => s.includes(t) ? s.filter(x=>x!==t) : [...s,t]); }
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
@@ -225,13 +388,26 @@ function AddTaskModal({ onClose, onAdd, categories }) {
             </div>
             {categories.length > 0 && selCats.length === 0 && <p className="text-xs text-[#E8735A] mt-1">Please select at least one category</p>}
           </div>
+          {taskTypes.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
+              <div className="flex flex-wrap gap-2">
+                {taskTypes.map(t => (
+                  <button key={t.id} onClick={() => toggleType(t.name)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[#1C1B19] text-white border-[#1C1B19]" : "bg-white text-[#8C8880] border-[#E5E2DE]"}`}>
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-[#8C8880] uppercase tracking-wide mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any extra details..."
               className="w-full h-20 text-sm bg-[#F7F5F2] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#E8735A]/40" />
           </div>
         </div>
-        <button onClick={() => { onAdd({ name, dueDate, dueTime, categories: selCats, types: [], done: false, notes }); onClose(); }}
+        <button onClick={() => { onAdd({ name, dueDate, dueTime, categories: selCats, types: selTypes, done: false, notes }); onClose(); }}
           disabled={!canSubmit}
           className="mt-5 w-full bg-[#E8735A] hover:bg-[#d4624a] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium py-2 rounded-xl transition-colors">
           Add Task
@@ -241,7 +417,7 @@ function AddTaskModal({ onClose, onAdd, categories }) {
   );
 }
 
-// ── Calendar ───────────────────────────────────────────────────
+// ── Calendar ────────────────────────────────────────────────────
 function CalendarView({ tasks, events, categories, onSelectItem }) {
   const today = new Date();
   const [current, setCurrent] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -309,37 +485,38 @@ function CalendarView({ tasks, events, categories, onSelectItem }) {
   );
 }
 
-// ── List View ──────────────────────────────────────────────────
+// ── List View ───────────────────────────────────────────────────
 function ListView({ tasks, events, categories, onSelectItem }) {
   const all = [
     ...tasks.filter(t => !t.done).map(t => ({ ...t, _type:"task",  _date:t.due_date, _time:t.due_time })),
     ...events.map(e =>              ({ ...e, _type:"event", _date:e.date,     _time:e.time    })),
-  ].sort((a,b) => new Date(`${a._date}T${a._time}`) - new Date(`${b._date}T${b._time}`));
+  ].sort((a,b) => new Date(`${a._date}T${a._time || "00:00"}`) - new Date(`${b._date}T${b._time || "00:00"}`));
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       <div className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-3 bg-[#EFEDE9] text-xs font-semibold text-[#8C8880] uppercase tracking-wide">
         <span>Name</span><span>Date</span><span>Category</span><span className="text-center">Type</span>
       </div>
+      {all.length === 0 && (
+        <p className="text-sm text-[#8C8880] px-6 py-10 text-center">No upcoming tasks or events!</p>
+      )}
       {all.map(item => {
-        const { value, unit, raw } = getTimeLeft(item._date, item._time);
-        const catName  = item._type === "task" ? item.categories?.[0] : item.category;
-        const s        = getCatStyle(catName, categories);
+        const { value, unit, raw } = getTimeLeft(item._date, item._time || "23:59");
+        const catName = item._type === "task" ? item.categories?.[0] : item.category;
+        const s       = getCatStyle(catName, categories);
         return (
           <div key={`${item._type}-${item.id}`} onClick={() => onSelectItem(item)}
             className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-4 border-t border-gray-100 items-center hover:bg-[#FAFAF8] transition-colors cursor-pointer">
             <span className="text-sm text-[#1C1B19] font-medium hover:text-[#E8735A] transition-colors">{item.name}</span>
             <span className={`text-sm px-2 py-0.5 rounded-md w-fit ${getUrgencyStyle(raw)}`}>
-            {dateMode === "daysLeft"
-                ? (raw < 0
-                    ? `${Math.abs(Math.round(raw * 10) / 10)} days ago`
-                    : unit === "min"
-                    ? `${value} min`
-                    : `${value} days`)
-                : new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              {raw < 0
+                ? `${Math.abs(Math.round(raw * 10) / 10)} days ago`
+                : unit === "min"
+                ? `${value} min`
+                : new Date(item._date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
             </span>
             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full w-fit"
-              style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>{catName}</span>
+              style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>{catName || "—"}</span>
             <div className="flex justify-center">
               <span className={`text-[10px] px-2 py-0.5 rounded-full ${item._type === "event" ? "bg-purple-100 text-purple-600" : "bg-blue-100 text-blue-600"}`}>
                 {item._type}
@@ -352,20 +529,43 @@ function ListView({ tasks, events, categories, onSelectItem }) {
   );
 }
 
-// ── Dashboard ──────────────────────────────────────────────────
-export default function Dashboard({ tasks, setTasks, addTask, events, addEvent, categories, eventTypes, addEventType, removeEventType }) {
-  const [view, setView]           = useState("calendar");
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [showAddTask, setShowAddTask]   = useState(false);
-  const [showAddEvent, setShowAddEvent] = useState(false);
+// ── Dashboard ───────────────────────────────────────────────────
+export default function Dashboard({
+  tasks, setTasks, addTask,
+  events, addEvent,
+  categories, taskTypes = [],
+  eventTypes, addEventType, removeEventType,
+}) {
+  const [view, setView]                     = useState("calendar");
+  const [selectedItem, setSelectedItem]     = useState(null);
+  const [showAddTask, setShowAddTask]       = useState(false);
+  const [showAddEvent, setShowAddEvent]     = useState(false);
+  const [statModal, setStatModal]           = useState(null);   // "week" | "overdue" | "events"
+  const [statDetailItem, setStatDetailItem] = useState(null);
   const today = new Date();
 
-  const upcomingCount = tasks.filter(t => { const {raw} = getTimeLeft(t.due_date, t.due_time); return !t.done && raw >= 0 && raw <= 7; }).length;
-  const overdueCount  = tasks.filter(t => !t.done && getTimeLeft(t.due_date, t.due_time).raw < 0).length;
-  const eventCount    = events.filter(e => getTimeLeft(e.date, e.time).raw >= 0).length;
+  // Filtered lists for each stat card
+  const weekItems = tasks
+    .filter(t => { const { raw } = getTimeLeft(t.due_date, t.due_time); return !t.done && raw >= 0 && raw <= 7; })
+    .map(t => ({ ...t, _type: "task", _date: t.due_date, _time: t.due_time }));
+
+  const overdueItems = tasks
+    .filter(t => !t.done && getTimeLeft(t.due_date, t.due_time).raw < 0)
+    .map(t => ({ ...t, _type: "task", _date: t.due_date, _time: t.due_time }));
+
+  const upcomingEventItems = events
+    .filter(e => getTimeLeft(e.date, e.time || "23:59").raw >= 0)
+    .map(e => ({ ...e, _type: "event", _date: e.date, _time: e.time }));
+
+  const STAT_CONFIG = [
+    { key: "week",    label: "Due This Week",   items: weekItems,          color: "text-[#E8735A]",  bg: "bg-orange-50" },
+    { key: "overdue", label: "Overdue",          items: overdueItems,       color: "text-red-500",    bg: "bg-red-50"    },
+    { key: "events",  label: "Upcoming Events",  items: upcomingEventItems, color: "text-purple-600", bg: "bg-purple-50" },
+  ];
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] p-8 font-sans">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-[#1C1B19]">Dashboard</h1>
@@ -391,30 +591,64 @@ export default function Dashboard({ tasks, setTasks, addTask, events, addEvent, 
         </div>
       </div>
 
+      {/* Stat cards — clickable */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label:"Due This Week",    value:upcomingCount, color:"text-[#E8735A]",  bg:"bg-orange-50" },
-          { label:"Overdue",          value:overdueCount,  color:"text-red-500",    bg:"bg-red-50"    },
-          { label:"Upcoming Events",  value:eventCount,    color:"text-purple-600", bg:"bg-purple-50" },
-        ].map(s => (
-          <div key={s.label} className={`${s.bg} rounded-2xl px-6 py-4 flex items-center justify-between`}>
+        {STAT_CONFIG.map(s => (
+          <div key={s.key}
+            onClick={() => setStatModal(s.key)}
+            className={`${s.bg} rounded-2xl px-6 py-4 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity`}>
             <span className="text-sm text-[#8C8880]">{s.label}</span>
-            <span className={`text-3xl font-bold ${s.color}`}>{s.value}</span>
+            <span className={`text-3xl font-bold ${s.color}`}>{s.items.length}</span>
           </div>
         ))}
       </div>
 
+      {/* Calendar / List */}
       {view === "calendar"
         ? <CalendarView tasks={tasks} events={events} categories={categories} onSelectItem={setSelectedItem} />
         : <ListView tasks={tasks} events={events} categories={categories} onSelectItem={setSelectedItem} />
       }
 
-      {selectedItem && (
-        <EventModal item={selectedItem} onClose={() => setSelectedItem(null)}
-          categories={categories} isTask={selectedItem._type === "task"}
-          onSaveTask={(id, updates) => { setTasks(id, updates); setSelectedItem(null); }} />
+      {/* Stat card list modal */}
+      {statModal && !statDetailItem && (
+        <StatListModal
+          title={STAT_CONFIG.find(s => s.key === statModal)?.label || ""}
+          items={STAT_CONFIG.find(s => s.key === statModal)?.items || []}
+          categories={categories}
+          onClose={() => setStatModal(null)}
+          onSelectItem={item => setStatDetailItem(item)}
+        />
       )}
-      {showAddTask && <AddTaskModal onClose={() => setShowAddTask(false)} onAdd={addTask} categories={categories} />}
+
+      {/* Detail modal from stat list drill-in */}
+      {statDetailItem && (
+        <EventModal
+          item={statDetailItem}
+          onClose={() => { setStatDetailItem(null); setStatModal(null); }}
+          onBack={() => setStatDetailItem(null)}
+          categories={categories}
+          taskTypes={taskTypes}
+          isTask={statDetailItem._type === "task"}
+          onSaveTask={(id, updates) => { setTasks(id, updates); setStatDetailItem(null); }}
+        />
+      )}
+
+      {/* Regular calendar/list item click modal */}
+      {selectedItem && (
+        <EventModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          categories={categories}
+          taskTypes={taskTypes}
+          isTask={selectedItem._type === "task"}
+          onSaveTask={(id, updates) => { setTasks(id, updates); setSelectedItem(null); }}
+        />
+      )}
+
+      {showAddTask && (
+        <AddTaskModal onClose={() => setShowAddTask(false)} onAdd={addTask}
+          categories={categories} taskTypes={taskTypes} />
+      )}
       {showAddEvent && (
         <AddEventModal onClose={() => setShowAddEvent(false)} onAdd={addEvent}
           categories={categories} eventTypes={eventTypes}

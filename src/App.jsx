@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import Landing from "./components/Landing";
 import Dashboard from "./components/Dashboard";
 import TaskList from "./components/TaskList";
+import Pomodoro from "./components/Pomodoro";
 
 const DEFAULT_TASK_TYPES  = ["HW", "Study", "Project", "Exam", "Presentation", "Review"];
 const DEFAULT_EVENT_TYPES = ["Meeting", "Social", "Workshop", "Event", "Office Hours", "Club"];
@@ -367,7 +368,7 @@ export default function App() {
       <nav className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <span className="text-base font-bold text-[#1C1B19]">Planorama</span>
-          {[["dashboard","Dashboard"],["tasks","Tasks"]].map(([id,label]) => (
+          {[["dashboard","Dashboard"],["tasks","Tasks"],["pomodoro","Pomodoro"]].map(([id,label]) => (
             <button key={id} onClick={() => setPage(id)}
               className={`text-sm font-medium pb-0.5 transition-colors ${page===id ? "text-[#E8735A] border-b-2 border-[#E8735A]" : "text-[#8C8880] hover:text-[#1C1B19]"}`}>
               {label}
@@ -386,9 +387,11 @@ export default function App() {
       {page === "dashboard" && (
         <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask}
           events={events} addEvent={addEvent} categories={normCats}
+          taskTypes={taskTypes}
           eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
           onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
       )}
+      {page === "pomodoro" && <Pomodoro />}
       {page === "tasks" && (
         <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
           categories={normCats} addCategory={addCategory} removeCategory={removeCategory}
