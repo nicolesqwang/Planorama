@@ -159,7 +159,8 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
   function startEdit(cat) {
     setEditingCatId(cat.id);
     setEditName(cat.name); setEditBg(cat.bg); setEditText(cat.text); setEditBorder(cat.border);
-    setEditBgTouched(false); setEditUserEditedText(true); setEditUserEditedBorder(true);
+    // Allow auto-suggest to kick in when user picks a new background color
+    setEditBgTouched(false); setEditUserEditedText(false); setEditUserEditedBorder(false);
   }
 
   function applyBgSuggest(hex, setB, setT, setBd, userT, userBd, setTouch) {
@@ -245,9 +246,6 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
                 onTextChange={v => { setCatText(v); setUserEditedText(true); }}
                 onBorderChange={v => { setCatBorder(v); setUserEditedBorder(true); }}
               />
-              {bgTouched && !userEditedText && (
-                <p className="text-[11px] text-[#8C8880]">✨ Text & border colors auto-suggested from background.</p>
-              )}
               <button onClick={handleAddCat} disabled={!catName.trim() || saving}
                 className="bg-[#E8735A] hover:bg-[#d4624a] disabled:opacity-40 text-white text-sm font-medium py-2 rounded-xl transition-colors">
                 {saving ? "Saving..." : "+ Add Category"}

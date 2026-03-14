@@ -75,9 +75,40 @@ function loadSavedColors() {
   catch { return DEFAULT_COLORS; }
 }
 
-function loadBgImages() {
-  try { return JSON.parse(localStorage.getItem("pomo_images") || "[]"); }
-  catch { return []; }
+// ── IndexedDB for background images (localStorage is too small for images) ──
+const IDB_NAME = "planorama_pomo";
+const IDB_STORE = "bg_images";
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: "id" });
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSaveImages(images) {
+  try {
+    const db = await openIDB();
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    const store = tx.objectStore(IDB_STORE);
+    store.clear();
+    images.forEach(img => store.put(img));
+    await new Promise(r => { tx.oncomplete = r; tx.onerror = r; });
+  } catch {}
+}
+
+async function idbLoadImages() {
+  try {
+    const db = await openIDB();
+    const tx = db.transaction(IDB_STORE, "readonly");
+    return await new Promise(resolve => {
+      const req = tx.objectStore(IDB_STORE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  } catch { return []; }
 }
 
 // ── Pomodoro ─────────────────────────────────────────────────────
@@ -91,9 +122,10 @@ export default function Pomodoro({ tasks = [], updateTask }) {
 
   // Theme
   const [bgColor, setBgColor]         = useState("#F9C4CF");
-  const [bgImage, setBgImage]         = useState(() => localStorage.getItem("pomo_bg_image") || null);
+  const [bgImage, setBgImage]         = useState(null);           // active image data URL
+  const [bgImageId, setBgImageId]     = useState(() => localStorage.getItem("pomo_bg_image_id") || null);
   const [savedColors, setSavedColors] = useState(loadSavedColors);
-  const [bgImages, setBgImages]       = useState(loadBgImages);
+  const [bgImages, setBgImages]       = useState([]);             // loaded from IDB
 
   // Palette UI
   const [showPalette, setShowPalette]       = useState(false);
@@ -114,15 +146,28 @@ export default function Pomodoro({ tasks = [], updateTask }) {
     return () => clearInterval(id);
   }, [running, secondsLeft]);
 
-  // Persist — wrap in try/catch; large images may exceed localStorage quota
-  useEffect(() => { try { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); } catch {} }, [savedColors]);
-  useEffect(() => { try { localStorage.setItem("pomo_images", JSON.stringify(bgImages)); } catch {} }, [bgImages]);
+  // Load images from IndexedDB on mount, restore active image
   useEffect(() => {
-    try {
-      if (bgImage) localStorage.setItem("pomo_bg_image", bgImage);
-      else localStorage.removeItem("pomo_bg_image");
-    } catch {}
-  }, [bgImage]);
+    idbLoadImages().then(imgs => {
+      setBgImages(imgs);
+      const savedId = localStorage.getItem("pomo_bg_image_id");
+      if (savedId) {
+        const found = imgs.find(i => i.id === savedId);
+        if (found) { setBgImage(found.url); setBgImageId(found.id); }
+        else { localStorage.removeItem("pomo_bg_image_id"); setBgImageId(null); }
+      }
+    });
+  }, []);
+
+  // Persist colors to localStorage (small data, fine here)
+  useEffect(() => { try { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); } catch {} }, [savedColors]);
+  // Persist images to IndexedDB
+  useEffect(() => { idbSaveImages(bgImages); }, [bgImages]);
+  // Persist active image ID to localStorage
+  useEffect(() => {
+    if (bgImageId) localStorage.setItem("pomo_bg_image_id", bgImageId);
+    else localStorage.removeItem("pomo_bg_image_id");
+  }, [bgImageId]);
 
   function switchMode(m) {
     setMode(m); setRunning(false); setEditing(false);
@@ -152,7 +197,7 @@ export default function Pomodoro({ tasks = [], updateTask }) {
     const id = `custom-${Date.now()}`;
     setSavedColors(p => [...p, { id, hex: customColor, name: "My color" }]);
     setBgColor(customColor);
-    setBgImage(null);
+    setBgImage(null); setBgImageId(null);
     setShowPalette(false);
   }
 
@@ -164,9 +209,10 @@ export default function Pomodoro({ tasks = [], updateTask }) {
     const reader = new FileReader();
     reader.onload = ev => {
       const url = ev.target.result;
-      const newImgs = [...bgImages, { id: `img-${Date.now()}`, url, name: file.name }];
-      setBgImages(newImgs);
+      const imgId = `img-${Date.now()}`;
+      setBgImages(prev => [...prev, { id: imgId, url, name: file.name }]);
       setBgImage(url);
+      setBgImageId(imgId);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -174,7 +220,7 @@ export default function Pomodoro({ tasks = [], updateTask }) {
 
   function deleteImage(id) {
     const img = bgImages.find(i => i.id === id);
-    if (img && bgImage === img.url) setBgImage(null);
+    if (img && bgImage === img.url) { setBgImage(null); setBgImageId(null); }
     setBgImages(p => p.filter(i => i.id !== id));
   }
 
@@ -270,7 +316,7 @@ export default function Pomodoro({ tasks = [], updateTask }) {
                   {savedColors.map(c => (
                     <div key={c.id} className="relative flex items-center justify-center">
                       <button
-                        onClick={() => { if (!editingPalette) { setBgColor(c.hex); setBgImage(null); setShowPalette(false); }}}
+                        onClick={() => { if (!editingPalette) { setBgColor(c.hex); setBgImage(null); setBgImageId(null); setShowPalette(false); }}}
                         title={c.name}
                         className="w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center"
                         style={{ background: c.hex, borderColor: !bgImage && bgColor === c.hex ? panelText : "transparent" }}
@@ -309,7 +355,7 @@ export default function Pomodoro({ tasks = [], updateTask }) {
                   {bgImages.map(img => (
                     <div key={img.id} className="relative">
                       <button
-                        onClick={() => { if (!editingPalette) { setBgImage(img.url); setShowPalette(false); }}}
+                        onClick={() => { if (!editingPalette) { setBgImage(img.url); setBgImageId(img.id); setShowPalette(false); }}}
                         className="w-full h-16 rounded-xl overflow-hidden border-2 transition-all"
                         style={{ borderColor: bgImage === img.url ? panelText : "transparent" }}
                       >
@@ -324,7 +370,7 @@ export default function Pomodoro({ tasks = [], updateTask }) {
                   ))}
                 </div>
                 {bgImage && (
-                  <button onClick={() => setBgImage(null)}
+                  <button onClick={() => { setBgImage(null); setBgImageId(null); }}
                     className="w-full text-xs py-1.5 rounded-lg transition-all"
                     style={{ background: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)", color: panelText }}>
                     Remove background image
