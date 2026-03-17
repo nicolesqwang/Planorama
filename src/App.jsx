@@ -298,6 +298,13 @@ export default function App() {
     setCatsState(p => p.filter(c => c.id !== id));
   }
 
+  async function deleteAllCompleted() {
+    const ids = tasks.filter(t => t.done).map(t => t.id);
+    if (!ids.length) return;
+    await supabase.from("tasks").delete().in("id", ids);
+    setTasksState(p => p.filter(t => !t.done));
+  }
+
   async function updateCategory(id, updates) {
     const { data, error } = await supabase.from("categories")
       .update({ name: updates.name, bg: updates.bg, text_color: updates.text, border: updates.border })
@@ -374,7 +381,7 @@ export default function App() {
     <div className="min-h-screen bg-[#F7F5F2]">
       <nav className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="text-base font-bold text-[#1C1B19]">Planorama</span>
+          <a href="/" target="_blank" rel="noopener noreferrer" className="text-base font-bold text-[#1C1B19] hover:text-[#E8735A] transition-colors cursor-pointer">Planorama</a>
           {[["dashboard","Dashboard"],["tasks","Tasks"],["pomodoro","Pomodoro"]].map(([id,label]) => (
             <button key={id} onClick={() => setPage(id)}
               className={`text-sm font-medium pb-0.5 transition-colors ${page===id ? "text-[#E8735A] border-b-2 border-[#E8735A]" : "text-[#8C8880] hover:text-[#1C1B19]"}`}>
@@ -403,7 +410,7 @@ export default function App() {
         <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
           categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
           taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
-          onExcelImport={handleExcelImport} />
+          onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted} />
       )}
     </div>
   );
