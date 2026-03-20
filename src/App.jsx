@@ -373,10 +373,10 @@ export default function App() {
   const emailUser   = session?.user?.email?.split("@")[0] || "";
   const nameParts   = emailUser.split(/[._\-]/).filter(Boolean);
   const displayName = nameParts.length > 1
-    ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1)
+    ? nameParts[nameParts.length - 1].charAt(0).toUpperCase() + nameParts[nameParts.length - 1].slice(1)
     : emailUser.charAt(0).toUpperCase() + emailUser.slice(1);
   const initials = nameParts.length > 1
-    ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
+    ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
     : emailUser.substring(0, 2).toUpperCase();
   const hour         = new Date().getHours();
   const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -402,6 +402,16 @@ export default function App() {
         </svg>
       ),
     },
+    {
+      id: "calendar", label: "Calendar",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1.5" y="2.5" width="13" height="12" rx="1.5"/>
+          <line x1="5" y1="1.5" x2="5" y2="4"/><line x1="11" y1="1.5" x2="11" y2="4"/>
+          <line x1="1.5" y1="6.5" x2="14.5" y2="6.5"/>
+        </svg>
+      ),
+    },
   ];
   const NAV_TOOLS = [
     {
@@ -415,7 +425,7 @@ export default function App() {
   ];
 
   if (loading) return (
-    <div className="min-h-screen bg-[#EEF1DE] flex items-center justify-center">
+    <div className="min-h-screen bg-[#F7F8EE] flex items-center justify-center">
       <div className="text-[#8A9170] text-sm font-medium">Loading...</div>
     </div>
   );
@@ -423,13 +433,13 @@ export default function App() {
   if (!session) return <Landing />;
 
   return (
-    <div className="min-h-screen bg-[#EEF1DE] flex">
+    <div className="min-h-screen bg-[#F7F8EE] flex">
 
       {/* ── Sidebar ────────────────────────────────────────────── */}
       <aside className="w-[196px] fixed left-0 top-0 h-full bg-[#E9ECCF] border-r border-[#C3C7A6] flex flex-col z-30">
 
         {/* Logo */}
-        <div className="px-4 pt-5 pb-4 border-b border-[#C3C7A6]">
+        <div className="px-4 py-3.5 border-b border-[#C3C7A6]">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-[#C3C7A6] flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -518,6 +528,13 @@ export default function App() {
               taskTypes={taskTypes}
               eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
               onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
+          )}
+          {page === "calendar" && (
+            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask}
+              events={events} addEvent={addEvent} categories={normCats}
+              taskTypes={taskTypes}
+              eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
+              calendarOnly={true} />
           )}
           {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} />}
           {page === "tasks" && (

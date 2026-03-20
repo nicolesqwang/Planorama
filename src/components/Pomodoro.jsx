@@ -61,13 +61,13 @@ const MODES = {
 };
 
 const DEFAULT_COLORS = [
-  { id: "baby-pink", hex: "#F9C4CF", name: "Baby Pink" },
-  { id: "plum",      hex: "#4D1F5A", name: "Plum" },
-  { id: "navy",      hex: "#1D3557", name: "Navy" },
-  { id: "mint",      hex: "#D4EDD4", name: "Mint" },
-  { id: "cyan",      hex: "#9CF6F6", name: "Cyan" },
-  { id: "yellow",    hex: "#FFF07C", name: "Yellow" },
-  { id: "red",       hex: "#BF4342", name: "Red" },
+  { id: "blush",      hex: "#F5D0D8", name: "Blush" },
+  { id: "lavender",   hex: "#D8CFF0", name: "Lavender" },
+  { id: "periwinkle", hex: "#C8D5F0", name: "Periwinkle" },
+  { id: "mint",       hex: "#C4EDD4", name: "Mint" },
+  { id: "sky",        hex: "#BDE8F0", name: "Sky" },
+  { id: "butter",     hex: "#F5EDB8", name: "Butter" },
+  { id: "peach",      hex: "#F5D4BC", name: "Peach" },
 ];
 
 function loadSavedColors() {
@@ -121,7 +121,7 @@ export default function Pomodoro({ tasks = [], updateTask }) {
   const [editValue, setEditValue]     = useState("");
 
   // Theme
-  const [bgColor, setBgColor]         = useState("#F9C4CF");
+  const [bgColor, setBgColor]         = useState("#F5D0D8");
   const [bgImage, setBgImage]         = useState(null);           // active image data URL
   const [bgImageId, setBgImageId]     = useState(() => localStorage.getItem("pomo_bg_image_id") || null);
   const [savedColors, setSavedColors] = useState(loadSavedColors);

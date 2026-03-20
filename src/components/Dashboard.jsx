@@ -528,6 +528,7 @@ export default function Dashboard({
   events, addEvent,
   categories, taskTypes = [],
   eventTypes, addEventType, removeEventType,
+  calendarOnly = false,
 }) {
   const [view, setView]                     = useState("calendar");
   const [selectedItem, setSelectedItem]     = useState(null);
@@ -557,9 +558,9 @@ export default function Dashboard({
   ];
 
   return (
-    <div className="bg-[#EEF1DE] min-h-screen p-[18px_22px]">
+    <div className="bg-[#F7F8EE] min-h-screen p-[18px_22px]">
       <div className="flex items-center justify-between mb-4">
-        <h2 style={lora} className="text-xl text-[#3A4A28]">Overview</h2>
+        <h2 style={lora} className="text-xl text-[#3A4A28]">{calendarOnly ? "Calendar" : "Overview"}</h2>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowAddTask(true)}
             className="bg-[#DDE0C0] border border-[#C3C7A6] hover:bg-[#C3C7A6] text-[#5A6440] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
@@ -569,38 +570,46 @@ export default function Dashboard({
             className="bg-[#DDE0C0] border border-[#C3C7A6] hover:bg-[#C3C7A6] text-[#5A6440] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
             + Event
           </button>
-          <div className="flex items-center gap-1 bg-[#DDE0C0] border border-[#C3C7A6] rounded-[9px] p-1 ml-1">
-            {[["calendar","Calendar"],["list","List"]].map(([id,label]) => (
-              <button key={id} onClick={() => setView(id)}
-                className={`px-3.5 py-1.5 rounded-[7px] text-[11.5px] font-bold transition-all ${view===id ? "bg-[#F4F5E8] text-[#3A4A28] shadow-sm" : "text-[#6B7255] hover:text-[#3A4A28]"}`}>
-                {label}
-              </button>
-            ))}
-          </div>
+          {!calendarOnly && (
+            <div className="flex items-center gap-1 bg-[#DDE0C0] border border-[#C3C7A6] rounded-[9px] p-1 ml-1">
+              {[["calendar","Calendar"],["list","List"]].map(([id,label]) => (
+                <button key={id} onClick={() => setView(id)}
+                  className={`px-3.5 py-1.5 rounded-[7px] text-[11.5px] font-bold transition-all ${view===id ? "bg-[#F4F5E8] text-[#3A4A28] shadow-sm" : "text-[#6B7255] hover:text-[#3A4A28]"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-[10px] mb-4">
-        {STAT_CONFIG.map(s => (
-          <div key={s.key} onClick={() => setStatModal(s.key)}
-            className={`${s.bg} border ${s.border} rounded-[13px] px-[15px] py-[13px] cursor-pointer hover:opacity-90 transition-opacity`}>
-            <p className="text-[9.5px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">{s.label}</p>
-            <p className={`text-[26px] font-bold leading-none ${s.valueColor}`}>{s.items.length}</p>
-          </div>
-        ))}
-      </div>
+      {!calendarOnly && (
+        <div className="grid grid-cols-4 gap-[10px] mb-4">
+          {STAT_CONFIG.map(s => (
+            <div key={s.key} onClick={() => setStatModal(s.key)}
+              className={`${s.bg} border ${s.border} rounded-[13px] px-[15px] py-[13px] cursor-pointer hover:opacity-90 transition-opacity`}>
+              <p className="text-[9.5px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">{s.label}</p>
+              <p className={`text-[26px] font-bold leading-none ${s.valueColor}`}>{s.items.length}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="grid grid-cols-[1fr_300px] gap-[14px]">
-        <div>
-          {view === "calendar"
-            ? <CalendarView tasks={tasks} events={events} categories={categories} onSelectItem={setSelectedItem} />
-            : <ListView tasks={tasks} events={events} categories={categories} onSelectItem={setSelectedItem} />}
+      {calendarOnly ? (
+        <CalendarView tasks={tasks} events={events} categories={categories} onSelectItem={setSelectedItem} />
+      ) : (
+        <div className="grid grid-cols-[1fr_300px] gap-[14px]">
+          <div>
+            {view === "calendar"
+              ? <CalendarView tasks={tasks} events={events} categories={categories} onSelectItem={setSelectedItem} />
+              : <ListView tasks={tasks} events={events} categories={categories} onSelectItem={setSelectedItem} />}
+          </div>
+          <div className="flex flex-col gap-[12px]">
+            <UpcomingPanel items={weekItems} categories={categories} onSelectItem={item => setSelectedItem({ ...item, _type: "task" })} />
+            <QuickAddPanel onAdd={addTask} categories={categories} />
+          </div>
         </div>
-        <div className="flex flex-col gap-[12px]">
-          <UpcomingPanel items={weekItems} categories={categories} onSelectItem={item => setSelectedItem({ ...item, _type: "task" })} />
-          <QuickAddPanel onAdd={addTask} categories={categories} />
-        </div>
-      </div>
+      )}
 
       {statModal && !statDetailItem && (
         <StatListModal title={STAT_CONFIG.find(s => s.key === statModal)?.label || ""}

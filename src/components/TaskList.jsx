@@ -9,7 +9,7 @@ function getTimeLeft(dueDate, dueTime) {
   const diffMins = diffMs / (1000 * 60);
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-  if (diffMins > 0 && diffMins <= 90) {
+  if (diffMins > 0 && diffDays < 0.2) {
     return { value: Math.round(diffMins), unit: "min", raw: diffDays };
   }
   return { value: Math.round(diffDays * 10) / 10, unit: "days", raw: diffDays };
@@ -495,7 +495,7 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <div className="min-h-screen bg-[#EEF1DE]">
+    <div className="min-h-screen bg-[#F7F8EE]">
       <div className="max-w-2xl mx-auto px-6 py-10">
 
         {/* ── Header ── */}
