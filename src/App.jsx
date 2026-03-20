@@ -5,6 +5,7 @@ import Landing from "./components/Landing";
 import Dashboard from "./components/Dashboard";
 import TaskList from "./components/TaskList";
 import Pomodoro from "./components/Pomodoro";
+import Settings from "./components/Settings";
 
 const DEFAULT_TASK_TYPES  = ["HW", "Study", "Project", "Exam", "Presentation", "Review"];
 const DEFAULT_EVENT_TYPES = ["Meeting", "Social", "Workshop", "Event", "Office Hours", "Club"];
@@ -503,8 +504,18 @@ export default function App() {
           ))}
         </nav>
 
-        {/* User card */}
-        <div className="px-3 pb-4 pt-3" style={{ borderTop: `1px solid ${headerBorder}` }}>
+        {/* Settings + User card */}
+        <div className="px-3 pb-4 pt-3 flex flex-col gap-2" style={{ borderTop: `1px solid ${headerBorder}` }}>
+          <button onClick={() => { setPage("settings"); setPomodoroColor(null); }}
+            className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
+              page === "settings" ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
+            }`}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="8" cy="8" r="2.2"/>
+              <path d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85"/>
+            </svg>
+            <span>Settings</span>
+          </button>
           <div className="bg-[#DDE0C0] rounded-xl p-2.5 flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-[#4A5C35] flex items-center justify-center flex-shrink-0">
               <span className="text-[9px] font-bold text-[#EEF1DE]">{initials}</span>
@@ -560,6 +571,9 @@ export default function App() {
               categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
               taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
               onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted} />
+          )}
+          {page === "settings" && (
+            <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut} />
           )}
         </main>
       </div>

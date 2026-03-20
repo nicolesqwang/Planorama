@@ -551,7 +551,7 @@ export default function Dashboard({
     .map(e => ({ ...e, _type: "event", _date: e.date, _time: e.time }));
 
   const STAT_CONFIG = [
-    { key: "week",      label: "Due This Week", items: weekItems,          bg: "bg-[#FAD98B]", border: "border-[#E5C060]", valueColor: "text-[#3A4A28]" },
+    { key: "week",      label: "Due This Week", items: weekItems,          bg: "bg-[#FFF3CE]", border: "border-[#E8D88A]", valueColor: "text-[#3A4A28]" },
     { key: "overdue",   label: "Overdue",        items: overdueItems,       bg: "bg-[#C8DFF5]", border: "border-[#94BDE0]", valueColor: "text-[#2A4A6B]" },
     { key: "completed", label: "Completed",      items: completedItems,     bg: "bg-[#F9C9C9]", border: "border-[#E89090]", valueColor: "text-[#3A4A28]" },
     { key: "events",    label: "Events",         items: upcomingEventItems, bg: "bg-[#A8C896]", border: "border-[#7AAB66]", valueColor: "text-[#2A4A1A]" },
