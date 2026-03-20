@@ -369,49 +369,165 @@ export default function App() {
 
   const normCats = categories.map(c => ({ ...c, text: c.text_color }));
 
+  // ── Display helpers ─────────────────────────────────────────
+  const emailUser   = session?.user?.email?.split("@")[0] || "";
+  const nameParts   = emailUser.split(/[._\-]/).filter(Boolean);
+  const displayName = nameParts.length > 1
+    ? nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1)
+    : emailUser.charAt(0).toUpperCase() + emailUser.slice(1);
+  const initials = nameParts.length > 1
+    ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
+    : emailUser.substring(0, 2).toUpperCase();
+  const hour         = new Date().getHours();
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const activeTasks  = tasks.filter(t => !t.done);
+
+  const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
+
+  const NAV_MAIN = [
+    {
+      id: "dashboard", label: "Dashboard",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1.5" y="1.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="1.5" width="5" height="5" rx="1.2"/>
+          <rect x="1.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/>
+        </svg>
+      ),
+    },
+    {
+      id: "tasks", label: "Tasks", badge: activeTasks.length || null,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <line x1="2" y1="4.5" x2="14" y2="4.5"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="11.5" x2="14" y2="11.5"/>
+        </svg>
+      ),
+    },
+  ];
+  const NAV_TOOLS = [
+    {
+      id: "pomodoro", label: "Pomodoro",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <circle cx="8" cy="8" r="5.5"/><line x1="8" y1="8" x2="8" y2="4.5"/><line x1="8" y1="8" x2="11" y2="9.5"/>
+        </svg>
+      ),
+    },
+  ];
+
   if (loading) return (
-    <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
-      <div className="text-[#8C8880] text-sm">Loading...</div>
+    <div className="min-h-screen bg-[#EEF1DE] flex items-center justify-center">
+      <div className="text-[#8A9170] text-sm font-medium">Loading...</div>
     </div>
   );
 
   if (!session) return <Landing />;
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2]">
-      <nav className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <a href="/" target="_blank" rel="noopener noreferrer" className="text-base font-bold text-[#1C1B19] hover:text-[#E8735A] transition-colors cursor-pointer">Planorama</a>
-          {[["dashboard","Dashboard"],["tasks","Tasks"],["pomodoro","Pomodoro"]].map(([id,label]) => (
-            <button key={id} onClick={() => setPage(id)}
-              className={`text-sm font-medium pb-0.5 transition-colors ${page===id ? "text-[#E8735A] border-b-2 border-[#E8735A]" : "text-[#8C8880] hover:text-[#1C1B19]"}`}>
-              {label}
+    <div className="min-h-screen bg-[#EEF1DE] flex">
+
+      {/* ── Sidebar ────────────────────────────────────────────── */}
+      <aside className="w-[196px] fixed left-0 top-0 h-full bg-[#E9ECCF] border-r border-[#C3C7A6] flex flex-col z-30">
+
+        {/* Logo */}
+        <div className="px-4 pt-5 pb-4 border-b border-[#C3C7A6]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#C3C7A6] flex items-center justify-center flex-shrink-0">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="6.5" cy="6.5" r="2" fill="#4A5C35"/>
+                <circle cx="6.5" cy="1.5" r="1.1" fill="#4A5C35"/>
+                <circle cx="6.5" cy="11.5" r="1.1" fill="#4A5C35"/>
+                <circle cx="1.5" cy="6.5" r="1.1" fill="#4A5C35"/>
+                <circle cx="11.5" cy="6.5" r="1.1" fill="#4A5C35"/>
+              </svg>
+            </div>
+            <div>
+              <div style={lora} className="text-[15px] text-[#4A5C35] leading-tight">Planorama</div>
+              <div className="text-[9px] text-[#8A9170] font-medium mt-0.5">your personal planner</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
+          <p className="text-[9px] font-bold text-[#8A9170] uppercase tracking-[0.7px] px-2 mb-1.5">Main</p>
+          {NAV_MAIN.map(item => (
+            <button key={item.id} onClick={() => setPage(item.id)}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
+                page === item.id ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
+              }`}>
+              <span className="flex-shrink-0">{item.icon}</span>
+              <span>{item.label}</span>
+              {item.badge && (
+                <span className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  page === item.id ? "bg-[#6B7A4A] text-[#EEF1DE]" : "bg-[#C3C7A6] text-[#4A5C35]"
+                }`}>{item.badge}</span>
+              )}
             </button>
           ))}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-[#8C8880]">{session.user.email}</span>
-          <button onClick={handleSignOut}
-            className="text-xs text-[#8C8880] hover:text-[#E8735A] border border-gray-200 px-3 py-1.5 rounded-lg transition-colors">
-            Sign out
-          </button>
-        </div>
-      </nav>
+          <p className="text-[9px] font-bold text-[#8A9170] uppercase tracking-[0.7px] px-2 mt-4 mb-1.5">Tools</p>
+          {NAV_TOOLS.map(item => (
+            <button key={item.id} onClick={() => setPage(item.id)}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
+                page === item.id ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
+              }`}>
+              <span className="flex-shrink-0">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
 
-      {page === "dashboard" && (
-        <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask}
-          events={events} addEvent={addEvent} categories={normCats}
-          taskTypes={taskTypes}
-          eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
-          onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
-      )}
-      {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} />}
-      {page === "tasks" && (
-        <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
-          categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
-          taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
-          onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted} />
-      )}
+        {/* User card */}
+        <div className="px-3 pb-4 border-t border-[#C3C7A6] pt-3">
+          <div className="bg-[#DDE0C0] rounded-xl p-2.5 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-[#4A5C35] flex items-center justify-center flex-shrink-0">
+              <span className="text-[9px] font-bold text-[#EEF1DE]">{initials}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11.5px] font-bold text-[#3A4A28] leading-tight truncate">{displayName}</p>
+              <p className="text-[9px] text-[#8A9170] truncate">{session.user.email}</p>
+            </div>
+            <button onClick={handleSignOut}
+              className="text-[8.5px] text-[#8A9170] hover:text-[#4A5C35] transition-colors flex-shrink-0 font-semibold">
+              Sign out
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main area ──────────────────────────────────────────── */}
+      <div className="ml-[196px] flex-1 flex flex-col min-h-screen">
+
+        {/* Topbar */}
+        <header className="bg-[#E9ECCF] border-b border-[#C3C7A6] px-7 py-3.5 flex items-center justify-between sticky top-0 z-20">
+          <div>
+            <p style={lora} className="text-base text-[#3A4A28] leading-snug">
+              {timeGreeting}, {displayName}
+            </p>
+            <p className="text-[10.5px] text-[#8A9170] font-medium mt-0.5">
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+              {activeTasks.length > 0 && <span className="ml-1">· {activeTasks.length} task{activeTasks.length !== 1 ? "s" : ""} remaining</span>}
+            </p>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1">
+          {page === "dashboard" && (
+            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask}
+              events={events} addEvent={addEvent} categories={normCats}
+              taskTypes={taskTypes}
+              eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
+              onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
+          )}
+          {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} />}
+          {page === "tasks" && (
+            <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
+              categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
+              taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
+              onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
