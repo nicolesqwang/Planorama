@@ -370,14 +370,19 @@ export default function App() {
   const normCats = categories.map(c => ({ ...c, text: c.text_color }));
 
   // ── Display helpers ─────────────────────────────────────────
+  const meta        = session?.user?.user_metadata || {};
   const emailUser   = session?.user?.email?.split("@")[0] || "";
   const nameParts   = emailUser.split(/[._\-]/).filter(Boolean);
-  const displayName = nameParts.length > 1
-    ? nameParts[nameParts.length - 1].charAt(0).toUpperCase() + nameParts[nameParts.length - 1].slice(1)
-    : emailUser.charAt(0).toUpperCase() + emailUser.slice(1);
-  const initials = nameParts.length > 1
-    ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
-    : emailUser.substring(0, 2).toUpperCase();
+  const displayName = meta.first_name
+    ? meta.first_name.charAt(0).toUpperCase() + meta.first_name.slice(1)
+    : nameParts.length > 1
+      ? nameParts[nameParts.length - 1].charAt(0).toUpperCase() + nameParts[nameParts.length - 1].slice(1)
+      : emailUser.charAt(0).toUpperCase() + emailUser.slice(1);
+  const initials = meta.first_name && meta.last_name
+    ? (meta.first_name[0] + meta.last_name[0]).toUpperCase()
+    : nameParts.length > 1
+      ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+      : emailUser.substring(0, 2).toUpperCase();
   const hour         = new Date().getHours();
   const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const activeTasks  = tasks.filter(t => !t.done);
@@ -439,7 +444,7 @@ export default function App() {
       <aside className="w-[196px] fixed left-0 top-0 h-full bg-[#E9ECCF] border-r border-[#C3C7A6] flex flex-col z-30">
 
         {/* Logo */}
-        <div className="px-4 py-3.5 border-b border-[#C3C7A6]">
+        <div className="px-4 h-[58px] flex items-center border-b border-[#C3C7A6] flex-shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-[#C3C7A6] flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -508,7 +513,7 @@ export default function App() {
       <div className="ml-[196px] flex-1 flex flex-col min-h-screen">
 
         {/* Topbar */}
-        <header className="bg-[#E9ECCF] border-b border-[#C3C7A6] px-7 py-3.5 flex items-center justify-between sticky top-0 z-20">
+        <header className="bg-[#E9ECCF] border-b border-[#C3C7A6] px-7 h-[58px] flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
           <div>
             <p style={lora} className="text-base text-[#3A4A28] leading-snug">
               {timeGreeting}, {displayName}

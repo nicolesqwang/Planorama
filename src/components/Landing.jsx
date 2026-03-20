@@ -5,6 +5,8 @@ const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500
 
 export default function Landing() {
   const [mode, setMode]           = useState(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName]   = useState("");
   const [email, setEmail]         = useState("");
   const [password, setPassword]   = useState("");
   const [error, setError]         = useState("");
@@ -14,7 +16,10 @@ export default function Landing() {
   async function handleSubmit() {
     setError(""); setLoading(true);
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { first_name: firstName.trim(), last_name: lastName.trim() } }
+      });
       if (error) setError(error.message);
       else setConfirmed(true);
     } else {
@@ -102,6 +107,22 @@ export default function Landing() {
           {mode === "login" ? "Log in to your Planorama account" : "Start organizing your life for free"}
         </p>
         <div className="flex flex-col gap-4">
+          {mode === "signup" && (
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">First Name</label>
+                <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="Nicole"
+                  className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Last Name</label>
+                <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="Wang"
+                  className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)}
@@ -116,7 +137,7 @@ export default function Landing() {
           </div>
         </div>
         {error && <p className="text-xs text-red-500 mt-3 font-medium">{error}</p>}
-        <button onClick={handleSubmit} disabled={!email || !password || loading}
+        <button onClick={handleSubmit} disabled={!email || !password || loading || (mode === "signup" && (!firstName.trim() || !lastName.trim()))}
           className="mt-5 w-full bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 disabled:cursor-not-allowed text-[#EEF1DE] text-sm font-semibold py-2.5 rounded-xl transition-colors">
           {loading ? "Loading..." : mode === "login" ? "Log in" : "Create account"}
         </button>

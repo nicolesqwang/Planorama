@@ -70,9 +70,13 @@ const DEFAULT_COLORS = [
   { id: "peach",      hex: "#F5D4BC", name: "Peach" },
 ];
 
+const PALETTE_VERSION = "2";
+
 function loadSavedColors() {
-  try { return JSON.parse(localStorage.getItem("pomo_colors") || "null") || DEFAULT_COLORS; }
-  catch { return DEFAULT_COLORS; }
+  try {
+    if (localStorage.getItem("pomo_colors_v") !== PALETTE_VERSION) return DEFAULT_COLORS;
+    return JSON.parse(localStorage.getItem("pomo_colors") || "null") || DEFAULT_COLORS;
+  } catch { return DEFAULT_COLORS; }
 }
 
 // ── IndexedDB for background images (localStorage is too small for images) ──
@@ -160,7 +164,7 @@ export default function Pomodoro({ tasks = [], updateTask }) {
   }, []);
 
   // Persist colors to localStorage (small data, fine here)
-  useEffect(() => { try { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); } catch {} }, [savedColors]);
+  useEffect(() => { try { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); localStorage.setItem("pomo_colors_v", PALETTE_VERSION); } catch {} }, [savedColors]);
   // Persist images to IndexedDB
   useEffect(() => { idbSaveImages(bgImages); }, [bgImages]);
   // Persist active image ID to localStorage

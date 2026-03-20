@@ -551,10 +551,10 @@ export default function Dashboard({
     .map(e => ({ ...e, _type: "event", _date: e.date, _time: e.time }));
 
   const STAT_CONFIG = [
-    { key: "week",      label: "Due This Week", items: weekItems,          bg: "bg-[#F1F0C8]", border: "border-[#D9DAAA]", valueColor: "text-[#3A4A28]" },
-    { key: "overdue",   label: "Overdue",        items: overdueItems,       bg: "bg-[#D9E4E0]", border: "border-[#B8CECC]", valueColor: "text-[#6B3A28]" },
-    { key: "completed", label: "Completed",      items: completedItems,     bg: "bg-[#EDD9CF]", border: "border-[#D7C59F]", valueColor: "text-[#3A4A28]" },
-    { key: "events",    label: "Events",         items: upcomingEventItems, bg: "bg-[#D9E0C8]", border: "border-[#C3C7A6]", valueColor: "text-[#5A4A7A]" },
+    { key: "week",      label: "Due This Week", items: weekItems,          bg: "bg-[#E8E69A]", border: "border-[#CECA6A]", valueColor: "text-[#3A4A28]" },
+    { key: "overdue",   label: "Overdue",        items: overdueItems,       bg: "bg-[#BEDCD6]", border: "border-[#8CBDB6]", valueColor: "text-[#6B3A28]" },
+    { key: "completed", label: "Completed",      items: completedItems,     bg: "bg-[#E8C0A8]", border: "border-[#CA9C82]", valueColor: "text-[#3A4A28]" },
+    { key: "events",    label: "Events",         items: upcomingEventItems, bg: "bg-[#C4D898]", border: "border-[#9CBB68]", valueColor: "text-[#5A4A7A]" },
   ];
 
   return (
