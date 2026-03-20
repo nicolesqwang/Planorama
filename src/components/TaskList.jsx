@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function getTimeLeft(dueDate, dueTime) {
   const now = new Date();
@@ -452,6 +452,22 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
   const [duplicatePrefill, setDuplicatePrefill] = useState(null);
   const [animatingOut, setAnimatingOut]     = useState([]);   // task IDs mid-strikethrough
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const undoStack = useRef([]);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        if (undoStack.current.length > 0) {
+          e.preventDefault();
+          const lastId = undoStack.current[undoStack.current.length - 1];
+          undoStack.current = undoStack.current.slice(0, -1);
+          updateTask(lastId, { done: false });
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const activeTasks = tasks.filter(t => !t.done).sort((a,b) => {
     if (sortByCategory) return (a.categories?.[0]||"").localeCompare(b.categories?.[0]||"");
@@ -467,132 +483,180 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
     setTimeout(() => {
       updateTask(taskId, { done: true });
       setAnimatingOut(prev => prev.filter(id => id !== taskId));
-    }, 1200);
+      undoStack.current = [...undoStack.current, taskId];
+    }, 700);
   }
 
+  const urgencyBar = (raw) => {
+    if (raw < 0)     return "bg-[#E07070]";
+    if (raw <= 1)    return "bg-[#E8A87C]";
+    if (raw <= 5)    return "bg-[#D4C06A]";
+    return "bg-[#84B89A]";
+  };
+
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
   return (
-    <div className="min-h-screen bg-[#F7F5F2] p-8 font-sans">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-[#1C1B19]">My Tasks</h1>
-        <div className="flex gap-2 items-center">
-            <label className="flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-[#1C1B19] text-sm font-medium px-4 py-2 rounded-xl transition-colors cursor-pointer">
-            ⬆ Import Excel
-            <input type="file" accept=".xlsx,.xls,.csv" className="hidden"
+    <div className="min-h-screen bg-[#F0EBE3] font-sans">
+      <div className="max-w-2xl mx-auto px-6 py-10">
+
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <p className="text-[11px] font-medium text-[#B5A99E] uppercase tracking-[0.15em] mb-1">{today}</p>
+            <h1 style={{ fontFamily: "'Lora', serif" }} className="text-4xl font-medium text-[#2C2825] leading-tight">My Tasks</h1>
+          </div>
+          <div className="flex gap-2 items-center mt-2">
+            <label className="flex items-center gap-1.5 bg-white/70 border border-[#DDD6CE] hover:bg-white text-[#7A6F67] text-xs font-medium px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-sm">
+              ↑ Import
+              <input type="file" accept=".xlsx,.xls,.csv" className="hidden"
                 onChange={async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                try {
-                  const { taskCount, catCount } = await onExcelImport(file);
-                  alert(`Imported ${taskCount} task${taskCount !== 1 ? "s" : ""}${catCount > 0 ? ` and ${catCount} new categor${catCount !== 1 ? "ies" : "y"}` : ""}!`);
-                } catch (err) {
-                  alert(`Import failed: ${err.message || "Unknown error. Make sure the file is a valid Excel or CSV file."}`);
-                }
-                e.target.value = "";
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  try {
+                    const { taskCount, catCount } = await onExcelImport(file);
+                    alert(`Imported ${taskCount} task${taskCount !== 1 ? "s" : ""}${catCount > 0 ? ` and ${catCount} new categor${catCount !== 1 ? "ies" : "y"}` : ""}!`);
+                  } catch (err) {
+                    alert(`Import failed: ${err.message || "Unknown error. Make sure the file is a valid Excel or CSV file."}`);
+                  }
+                  e.target.value = "";
                 }} />
             </label>
             <button onClick={() => setShowManage(true)}
-            className="flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 text-[#1C1B19] text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-            ⚙ Manage
+              className="flex items-center gap-1.5 bg-white/70 border border-[#DDD6CE] hover:bg-white text-[#7A6F67] text-xs font-medium px-3.5 py-2 rounded-xl transition-all shadow-sm">
+              ⚙ Manage
             </button>
             <button onClick={() => { setDuplicatePrefill(null); setShowAddTask(true); }}
-            className="flex items-center gap-2 bg-[#E8735A] hover:bg-[#d4624a] text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors">
-            + Add Task
+              className="flex items-center gap-1.5 bg-[#E8735A] hover:bg-[#d4624a] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-md shadow-[#E8735A]/25">
+              + Add Task
             </button>
-        </div>
-    </div>
-
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-3 bg-[#EFEDE9] text-xs font-semibold text-[#8C8880] uppercase tracking-wide">
-          <span>Task</span>
-          <button onClick={()=>setDateMode(d=>d==="daysLeft"?"dueDate":"daysLeft")}
-            className="flex items-center gap-1 hover:text-[#E8735A] transition-colors w-fit">
-            {dateMode==="daysLeft"?"Days Left":"Due Date"} <span className="text-[10px] opacity-60">⇄</span>
-          </button>
-          <button onClick={()=>setSortByCategory(s=>!s)}
-            className={`flex items-center gap-1 transition-colors w-fit ${sortByCategory?"text-[#E8735A]":"hover:text-[#E8735A]"}`}>
-            Type <span className="text-[10px] opacity-60">{sortByCategory?"↑A":"⇅"}</span>
-          </button>
-          <span className="text-center">Done</span>
-        </div>
-
-        {activeTasks.length === 0 && (
-          <div className="px-6 py-10 text-center text-sm text-[#8C8880]">
-            No tasks yet — add your first one above! 🎉
           </div>
-        )}
+        </div>
 
-        {activeTasks.map(task => {
-          const { value, unit, raw } = getTimeLeft(task.due_date, task.due_time);
-          const isAnimating = animatingOut.includes(task.id);
-          return (
-            <div key={task.id}
-              className={`grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-4 border-t border-gray-100 items-center transition-all duration-700 ${isAnimating ? "opacity-30 bg-gray-50" : "hover:bg-[#FAFAF8]"}`}>
-              <span
-                className={`text-sm flex items-center gap-1 transition-all duration-500 ${isAnimating ? "line-through text-gray-400 cursor-default" : "text-[#1C1B19] cursor-pointer hover:text-[#E8735A]"}`}
-                onClick={() => !isAnimating && setSelectedTask(task)}>
-                {task.name} {task.notes && <span className="text-[10px] text-[#8C8880]">📝</span>}
-              </span>
-              <span className={`text-sm px-2 py-0.5 rounded-md w-fit transition-all duration-500 ${isAnimating ? "opacity-40" : getUrgencyStyle(raw)}`}>
-                {dateMode === "daysLeft"
-                  ? (raw < 0 ? `${Math.abs(Math.round(raw * 10) / 10)} days ago` : unit === "min" ? `${value} min` : `${value} days`)
-                  : new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-              <div className={`flex flex-wrap gap-1 transition-opacity duration-500 ${isAnimating ? "opacity-30" : ""}`}>
-                {(task.categories||[]).map(c=><CategoryPill key={c} cat={c} categories={categories}/>)}
-              </div>
-              <div className="flex justify-center">
-                <input type="checkbox" checked={isAnimating || task.done}
-                  onChange={() => !isAnimating && handleCheckDone(task.id)}
-                  disabled={isAnimating}
-                  className="w-4 h-4 accent-[#E8735A] cursor-pointer disabled:cursor-default" />
-              </div>
-            </div>
-          );
-        })}
-
-        <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
-          <button className="flex-1 text-center text-sm text-[#8C8880] hover:bg-[#EFEDE9] py-1 rounded-lg cursor-pointer transition-colors"
-            onClick={()=>setShowCompleted(s=>!s)}>
-            {showCompleted?"Hide":"Click to view"} completed tasks ({completedTasks.length})
+        {/* ── Sort / view controls ── */}
+        <div className="flex items-center gap-2 mb-5">
+          <span className="text-[11px] text-[#B5A99E] uppercase tracking-wider mr-1">Sort</span>
+          <button onClick={() => setSortByCategory(false)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!sortByCategory ? "bg-[#2C2825] text-white border-[#2C2825]" : "bg-white/60 text-[#7A6F67] border-[#DDD6CE] hover:bg-white"}`}>
+            Due date
           </button>
-          {completedTasks.length > 0 && (
-            <button onClick={()=>setShowClearConfirm(true)}
-              className="ml-3 text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-              Clear all
+          <button onClick={() => setSortByCategory(true)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${sortByCategory ? "bg-[#2C2825] text-white border-[#2C2825]" : "bg-white/60 text-[#7A6F67] border-[#DDD6CE] hover:bg-white"}`}>
+            Category
+          </button>
+          <button onClick={() => setDateMode(d => d === "daysLeft" ? "dueDate" : "daysLeft")}
+            className="ml-auto text-[11px] text-[#B5A99E] hover:text-[#7A6F67] transition-colors flex items-center gap-1">
+            {dateMode === "daysLeft" ? "Showing days left" : "Showing due date"} <span className="opacity-70">⇄</span>
+          </button>
+        </div>
+
+        {/* ── Task cards ── */}
+        <div className="flex flex-col gap-2.5">
+          {activeTasks.length === 0 && (
+            <div className="bg-white/50 rounded-2xl border border-[#E8E2D8] px-6 py-14 text-center">
+              <div className="text-3xl mb-3 opacity-40">✦</div>
+              <p className="text-sm text-[#B5A99E]">No tasks yet — add your first one above!</p>
+            </div>
+          )}
+
+          {activeTasks.map(task => {
+            const { value, unit, raw } = getTimeLeft(task.due_date, task.due_time);
+            const isAnimating = animatingOut.includes(task.id);
+            return (
+              <div key={task.id}
+                className={`bg-white rounded-2xl border border-[#EAE4DA] overflow-hidden transition-opacity duration-500 ${isAnimating ? "opacity-25" : "hover:border-[#D6CFC5] hover:shadow-sm"}`}>
+                <div className="flex items-stretch">
+                  {/* Urgency accent bar */}
+                  <div className={`w-1 flex-shrink-0 ${urgencyBar(raw)}`} />
+                  {/* Content */}
+                  <div className="flex items-center gap-4 px-4 py-3.5 flex-1 min-w-0">
+                    {/* Name + pills */}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`text-sm font-medium leading-snug ${isAnimating ? "line-through text-[#C0B8B0]" : "text-[#2C2825] cursor-pointer hover:text-[#E8735A]"} transition-colors`}
+                        onClick={() => !isAnimating && setSelectedTask(task)}>
+                        {task.name}{task.notes && <span className="text-[10px] text-[#C8C0B8] ml-1">📝</span>}
+                      </div>
+                      {(task.categories || []).length > 0 && (
+                        <div className={`flex flex-wrap gap-1 mt-1.5 ${isAnimating ? "opacity-40" : ""}`}>
+                          {task.categories.map(c => <CategoryPill key={c} cat={c} categories={categories} />)}
+                        </div>
+                      )}
+                    </div>
+                    {/* Date badge */}
+                    <span className={`text-xs px-2.5 py-1 rounded-lg font-medium flex-shrink-0 ${isAnimating ? "line-through text-[#C0B8B0] bg-[#F5F2EE]" : getUrgencyStyle(raw)}`}>
+                      {dateMode === "daysLeft"
+                        ? (raw < 0 ? `${Math.abs(Math.round(raw * 10) / 10)}d ago` : unit === "min" ? `${value}m` : `${value}d`)
+                        : new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                    {/* Checkbox */}
+                    <input type="checkbox" checked={isAnimating || task.done}
+                      onChange={() => !isAnimating && handleCheckDone(task.id)}
+                      disabled={isAnimating}
+                      className="w-4 h-4 accent-[#E8735A] cursor-pointer disabled:cursor-default flex-shrink-0" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Completed section ── */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <button className="flex items-center gap-1.5 text-xs text-[#B5A99E] hover:text-[#7A6F67] transition-colors"
+              onClick={() => setShowCompleted(s => !s)}>
+              <span className="text-[10px]">{showCompleted ? "▾" : "▸"}</span>
+              Completed · {completedTasks.length}
             </button>
+            {completedTasks.length > 0 && (
+              <button onClick={() => setShowClearConfirm(true)}
+                className="text-[11px] text-[#C4A49A] hover:text-red-400 transition-colors">
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {showCompleted && (
+            <div className="flex flex-col gap-2">
+              {completedTasks.map(task => (
+                <div key={task.id} className="bg-white/40 rounded-xl border border-[#EAE4DA] overflow-hidden opacity-55 hover:opacity-75 transition-opacity">
+                  <div className="flex items-center gap-4 px-5 py-3">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-[#B5A99E] line-through">{task.name}</span>
+                      {(task.categories || []).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {task.categories.map(c => <CategoryPill key={c} cat={c} categories={categories} />)}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs text-[#C0B8B0] flex-shrink-0">
+                      {new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                    <input type="checkbox" checked={task.done} onChange={() => updateTask(task.id, { done: !task.done })}
+                      className="w-4 h-4 accent-[#E8735A] cursor-pointer flex-shrink-0" />
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-
-        {showCompleted && completedTasks.map(task=>(
-          <div key={task.id} className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-4 border-t border-gray-100 items-center bg-gray-50 opacity-60">
-            <span className="text-sm text-gray-400 line-through">{task.name}</span>
-            <span className="text-sm text-gray-400">
-              {new Date(task.due_date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {(task.categories||[]).map(c=><CategoryPill key={c} cat={c} categories={categories}/>)}
-            </div>
-            <div className="flex justify-center">
-              <input type="checkbox" checked={task.done} onChange={()=>updateTask(task.id,{done:!task.done})}
-                className="w-4 h-4 accent-[#E8735A] cursor-pointer" />
-            </div>
-          </div>
-        ))}
       </div>
 
+      {/* ── Clear confirm modal ── */}
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={()=>setShowClearConfirm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowClearConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
             <div className="text-2xl mb-3">🗑️</div>
-            <h3 className="text-base font-semibold text-[#1C1B19] mb-2">Clear all completed tasks?</h3>
-            <p className="text-sm text-[#8C8880] mb-6">This will permanently delete all {completedTasks.length} completed task{completedTasks.length !== 1 ? "s" : ""}. This cannot be undone.</p>
+            <h3 className="text-base font-semibold text-[#2C2825] mb-2">Clear all completed tasks?</h3>
+            <p className="text-sm text-[#9B8F85] mb-6">This will permanently delete all {completedTasks.length} completed task{completedTasks.length !== 1 ? "s" : ""}.</p>
             <div className="flex gap-3">
-              <button onClick={()=>setShowClearConfirm(false)}
-                className="flex-1 text-sm text-[#8C8880] border border-gray-200 py-2 rounded-xl hover:bg-gray-50 transition-colors">
+              <button onClick={() => setShowClearConfirm(false)}
+                className="flex-1 text-sm text-[#7A6F67] border border-[#E0D9D0] py-2 rounded-xl hover:bg-[#F5F0E8] transition-colors">
                 Cancel
               </button>
-              <button onClick={async ()=>{ await deleteAllCompleted(); setShowClearConfirm(false); setShowCompleted(false); }}
-                className="flex-1 text-sm text-white bg-red-500 hover:bg-red-600 py-2 rounded-xl transition-colors">
+              <button onClick={async () => { await deleteAllCompleted(); setShowClearConfirm(false); setShowCompleted(false); }}
+                className="flex-1 text-sm text-white bg-red-400 hover:bg-red-500 py-2 rounded-xl transition-colors">
                 Yes, delete all
               </button>
             </div>
@@ -600,9 +664,9 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
         </div>
       )}
 
-      {selectedTask && <TaskModal task={selectedTask} onClose={()=>setSelectedTask(null)} onSave={updateTask} onDuplicate={handleDuplicate} categories={categories} taskTypes={taskTypes}/>}
-      {showAddTask && <AddTaskModal onClose={()=>{setShowAddTask(false);setDuplicatePrefill(null);}} onAdd={addTask} categories={categories} taskTypes={taskTypes} prefill={duplicatePrefill}/>}
-      {showManage && <ManageModal categories={categories} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory} taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType} onClose={()=>setShowManage(false)}/>}
+      {selectedTask && <TaskModal task={selectedTask} onClose={() => setSelectedTask(null)} onSave={updateTask} onDuplicate={handleDuplicate} categories={categories} taskTypes={taskTypes} />}
+      {showAddTask && <AddTaskModal onClose={() => { setShowAddTask(false); setDuplicatePrefill(null); }} onAdd={addTask} categories={categories} taskTypes={taskTypes} prefill={duplicatePrefill} />}
+      {showManage && <ManageModal categories={categories} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory} taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType} onClose={() => setShowManage(false)} />}
     </div>
   );
 }
