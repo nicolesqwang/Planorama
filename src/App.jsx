@@ -191,6 +191,13 @@ export function parseICSFile(file) {
   });
 }
 
+function blendWithWhite(hex, alpha) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgb(${Math.round(r*alpha+255*(1-alpha))},${Math.round(g*alpha+255*(1-alpha))},${Math.round(b*alpha+255*(1-alpha))})`;
+}
+
 export default function App() {
   const [session, setSession]      = useState(null);
   const [loading, setLoading]      = useState(true);
@@ -200,6 +207,7 @@ export default function App() {
   const [categories, setCatsState] = useState([]);
   const [taskTypes, setTTState]    = useState([]);
   const [eventTypes, setETState]   = useState([]);
+  const [pomodoroColor, setPomodoroColor] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -389,6 +397,9 @@ export default function App() {
 
   const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
+  const headerBg     = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.5) : "#E9ECCF";
+  const headerBorder = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.7) : "#C3C7A6";
+
   const NAV_MAIN = [
     {
       id: "dashboard", label: "Dashboard",
@@ -441,10 +452,11 @@ export default function App() {
     <div className="min-h-screen bg-[#F7F8EE] flex">
 
       {/* ── Sidebar ────────────────────────────────────────────── */}
-      <aside className="w-[196px] fixed left-0 top-0 h-full bg-[#E9ECCF] border-r border-[#C3C7A6] flex flex-col z-30">
+      <aside className="w-[196px] fixed left-0 top-0 h-full flex flex-col z-30 transition-colors duration-500"
+        style={{ background: headerBg, borderRight: `1px solid ${headerBorder}` }}>
 
         {/* Logo */}
-        <div className="px-4 h-[58px] flex items-center border-b border-[#C3C7A6] flex-shrink-0">
+        <div className="px-4 h-[58px] flex items-center flex-shrink-0" style={{ borderBottom: `1px solid ${headerBorder}` }}>
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-[#C3C7A6] flex items-center justify-center flex-shrink-0">
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
@@ -466,7 +478,7 @@ export default function App() {
         <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
           <p className="text-[9px] font-bold text-[#8A9170] uppercase tracking-[0.7px] px-2 mb-1.5">Main</p>
           {NAV_MAIN.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
+            <button key={item.id} onClick={() => { setPage(item.id); if (item.id !== "pomodoro") setPomodoroColor(null); }}
               className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
                 page === item.id ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
               }`}>
@@ -481,7 +493,7 @@ export default function App() {
           ))}
           <p className="text-[9px] font-bold text-[#8A9170] uppercase tracking-[0.7px] px-2 mt-4 mb-1.5">Tools</p>
           {NAV_TOOLS.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
+            <button key={item.id} onClick={() => { setPage(item.id); if (item.id !== "pomodoro") setPomodoroColor(null); }}
               className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
                 page === item.id ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
               }`}>
@@ -492,7 +504,7 @@ export default function App() {
         </nav>
 
         {/* User card */}
-        <div className="px-3 pb-4 border-t border-[#C3C7A6] pt-3">
+        <div className="px-3 pb-4 pt-3" style={{ borderTop: `1px solid ${headerBorder}` }}>
           <div className="bg-[#DDE0C0] rounded-xl p-2.5 flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-[#4A5C35] flex items-center justify-center flex-shrink-0">
               <span className="text-[9px] font-bold text-[#EEF1DE]">{initials}</span>
@@ -513,7 +525,8 @@ export default function App() {
       <div className="ml-[196px] flex-1 flex flex-col min-h-screen">
 
         {/* Topbar */}
-        <header className="bg-[#E9ECCF] border-b border-[#C3C7A6] px-7 h-[58px] flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
+        <header className="px-7 h-[58px] flex items-center justify-between sticky top-0 z-20 flex-shrink-0 transition-colors duration-500"
+          style={{ background: headerBg, borderBottom: `1px solid ${headerBorder}` }}>
           <div>
             <p style={lora} className="text-base text-[#3A4A28] leading-snug">
               {timeGreeting}, {displayName}
@@ -541,7 +554,7 @@ export default function App() {
               eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
               calendarOnly={true} />
           )}
-          {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} />}
+          {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} onColorChange={setPomodoroColor} />}
           {page === "tasks" && (
             <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
               categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}

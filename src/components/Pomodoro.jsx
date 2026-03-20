@@ -116,7 +116,7 @@ async function idbLoadImages() {
 }
 
 // ── Pomodoro ─────────────────────────────────────────────────────
-export default function Pomodoro({ tasks = [], updateTask }) {
+export default function Pomodoro({ tasks = [], updateTask, onColorChange }) {
   const [mode, setMode]               = useState("pomodoro");
   const [durations, setDurations]     = useState({ pomodoro: 25, shortBreak: 5, longBreak: 15 });
   const [secondsLeft, setSecondsLeft] = useState(25 * 60);
@@ -162,6 +162,9 @@ export default function Pomodoro({ tasks = [], updateTask }) {
       }
     });
   }, []);
+
+  // Sync color to parent (for sidebar/topbar tinting)
+  useEffect(() => { if (onColorChange) onColorChange(bgImage ? null : bgColor); }, [bgColor, bgImage]);
 
   // Persist colors to localStorage (small data, fine here)
   useEffect(() => { try { localStorage.setItem("pomo_colors", JSON.stringify(savedColors)); localStorage.setItem("pomo_colors_v", PALETTE_VERSION); } catch {} }, [savedColors]);
