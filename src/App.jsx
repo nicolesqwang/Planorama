@@ -6,7 +6,7 @@ import Dashboard from "./components/Dashboard";
 import TaskList from "./components/TaskList";
 import Pomodoro from "./components/Pomodoro";
 import Settings from "./components/Settings";
-import { DEFAULT_THEME_KEY, applyTheme } from "./theme";
+import { DEFAULT_THEME_KEY, applyTheme, generateThemeFromColor } from "./theme";
 
 const DEFAULT_TASK_TYPES  = ["HW", "Study", "Project", "Exam", "Presentation", "Review"];
 const DEFAULT_EVENT_TYPES = ["Meeting", "Social", "Workshop", "Event", "Office Hours", "Club"];
@@ -211,14 +211,22 @@ export default function App() {
   const [eventTypes, setETState]   = useState([]);
   const [pomodoroColor, setPomodoroColor] = useState(null);
   const [themeKey, setThemeKey] = useState(DEFAULT_THEME_KEY);
+  const [customThemeHex, setCustomThemeHex] = useState("#4A5C35");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session); setLoading(false);
       if (session) {
-        const saved = session.user?.user_metadata?.theme_key || DEFAULT_THEME_KEY;
+        const meta  = session.user?.user_metadata || {};
+        const saved = meta.theme_key || DEFAULT_THEME_KEY;
+        const hex   = meta.custom_theme_hex || "#4A5C35";
         setThemeKey(saved);
-        applyTheme(saved);
+        setCustomThemeHex(hex);
+        if (saved === "custom") {
+          applyTheme("custom", generateThemeFromColor(hex));
+        } else {
+          applyTheme(saved);
+        }
       }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -228,10 +236,16 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function handleThemeChange(key) {
+  async function handleThemeChange(key, hex = null) {
     setThemeKey(key);
-    applyTheme(key);
-    await supabase.auth.updateUser({ data: { theme_key: key } });
+    if (key === "custom" && hex) {
+      setCustomThemeHex(hex);
+      applyTheme("custom", generateThemeFromColor(hex));
+      await supabase.auth.updateUser({ data: { theme_key: "custom", custom_theme_hex: hex } });
+    } else {
+      applyTheme(key);
+      await supabase.auth.updateUser({ data: { theme_key: key } });
+    }
   }
 
   useEffect(() => { if (session) loadAll(); }, [session]);
@@ -593,7 +607,7 @@ export default function App() {
           )}
           {page === "settings" && (
             <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut}
-              themeKey={themeKey} onThemeChange={handleThemeChange} />
+              themeKey={themeKey} customThemeHex={customThemeHex} onThemeChange={handleThemeChange} />
           )}
         </main>
       </div>

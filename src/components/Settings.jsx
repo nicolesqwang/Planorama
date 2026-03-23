@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "../supabase";
-import { THEMES } from "../theme";
+import { THEMES, generateThemeFromColor } from "../theme";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -49,8 +49,9 @@ function ThemedSelect({ value, onChange, children }) {
   );
 }
 
-export default function Settings({ session, deleteAllCompleted, onSignOut, themeKey, onThemeChange }) {
+export default function Settings({ session, deleteAllCompleted, onSignOut, themeKey, customThemeHex, onThemeChange }) {
   const meta = session?.user?.user_metadata || {};
+  const colorInputRef = useRef(null);
 
   // Profile
   const [firstName, setFirstName] = useState(meta.first_name || "");
@@ -197,11 +198,11 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
 
             {/* ── Color theme ── */}
             <Field label="App color theme">
-              <div className="flex flex-wrap gap-2 mt-0.5">
+              <div className="flex flex-wrap gap-2 mt-0.5 items-center">
                 {Object.entries(THEMES).map(([key, t]) => (
                   <button key={key} onClick={() => onThemeChange(key)}
                     title={t.name}
-                    className="w-8 h-8 rounded-full transition-all flex items-center justify-center"
+                    className="w-8 h-8 rounded-full transition-all flex items-center justify-center flex-shrink-0"
                     style={{
                       background: t.swatch,
                       border: themeKey === key ? `3px solid ${t.primary}` : `2px solid transparent`,
@@ -216,9 +217,49 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
                     )}
                   </button>
                 ))}
+
+                {/* Custom color picker */}
+                <div className="relative flex-shrink-0">
+                  <button
+                    title="Custom color"
+                    onClick={() => colorInputRef.current?.click()}
+                    className="w-8 h-8 rounded-full transition-all flex items-center justify-center overflow-hidden"
+                    style={{
+                      background: themeKey === "custom"
+                        ? generateThemeFromColor(customThemeHex).swatch
+                        : "conic-gradient(from 0deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #c77dff, #ff6b6b)",
+                      border: themeKey === "custom" ? `3px solid ${generateThemeFromColor(customThemeHex).primary}` : "2px solid transparent",
+                      outline: themeKey === "custom" ? `2px solid ${generateThemeFromColor(customThemeHex).swatch}` : "none",
+                      outlineOffset: "1px",
+                      boxShadow: themeKey === "custom"
+                        ? `0 0 0 1px ${generateThemeFromColor(customThemeHex).primary}`
+                        : "0 0 0 1px rgba(0,0,0,0.18)",
+                    }}>
+                    {themeKey === "custom" ? (
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                        stroke={generateThemeFromColor(customThemeHex).primary}
+                        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="2,6 5,9 10,3"/>
+                      </svg>
+                    ) : (
+                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"
+                        style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.4))" }}>
+                        <line x1="5.5" y1="1.5" x2="5.5" y2="9.5"/>
+                        <line x1="1.5" y1="5.5" x2="9.5" y2="5.5"/>
+                      </svg>
+                    )}
+                  </button>
+                  <input
+                    ref={colorInputRef}
+                    type="color"
+                    value={themeKey === "custom" ? customThemeHex : "#4A5C35"}
+                    onChange={e => onThemeChange("custom", e.target.value)}
+                    className="absolute inset-0 opacity-0 w-0 h-0 pointer-events-none"
+                  />
+                </div>
               </div>
               <p className="text-[11px] mt-1" style={{ color: "var(--t-text-muted)" }}>
-                {THEMES[themeKey]?.name || "Green"} theme selected — applies across the whole app.
+                {themeKey === "custom" ? "Custom color selected" : (THEMES[themeKey]?.name || "Green") + " theme selected"} — applies across the whole app.
               </p>
             </Field>
 
