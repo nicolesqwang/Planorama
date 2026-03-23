@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import TaskList from "./components/TaskList";
 import Pomodoro from "./components/Pomodoro";
 import Settings from "./components/Settings";
+import { DEFAULT_THEME_KEY, applyTheme } from "./theme";
 
 const DEFAULT_TASK_TYPES  = ["HW", "Study", "Project", "Exam", "Presentation", "Review"];
 const DEFAULT_EVENT_TYPES = ["Meeting", "Social", "Workshop", "Event", "Office Hours", "Club"];
@@ -209,10 +210,16 @@ export default function App() {
   const [taskTypes, setTTState]    = useState([]);
   const [eventTypes, setETState]   = useState([]);
   const [pomodoroColor, setPomodoroColor] = useState(null);
+  const [themeKey, setThemeKey] = useState(DEFAULT_THEME_KEY);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session); setLoading(false);
+      if (session) {
+        const saved = session.user?.user_metadata?.theme_key || DEFAULT_THEME_KEY;
+        setThemeKey(saved);
+        applyTheme(saved);
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setSession(session);
@@ -220,6 +227,12 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  async function handleThemeChange(key) {
+    setThemeKey(key);
+    applyTheme(key);
+    await supabase.auth.updateUser({ data: { theme_key: key } });
+  }
 
   useEffect(() => { if (session) loadAll(); }, [session]);
 
@@ -398,8 +411,8 @@ export default function App() {
 
   const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
-  const headerBg     = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.5) : "#E9ECCF";
-  const headerBorder = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.7) : "#C3C7A6";
+  const headerBg     = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.5) : "var(--t-bg-input)";
+  const headerBorder = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.7) : "var(--t-border)";
 
   const NAV_MAIN = [
     {
@@ -442,15 +455,15 @@ export default function App() {
   ];
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F7F8EE] flex items-center justify-center">
-      <div className="text-[#8A9170] text-sm font-medium">Loading...</div>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--t-bg-page)" }}>
+      <div className="text-sm font-medium" style={{ color: "var(--t-text-muted)" }}>Loading...</div>
     </div>
   );
 
   if (!session) return <Landing />;
 
   return (
-    <div className="min-h-screen bg-[#F7F8EE] flex">
+    <div className="min-h-screen flex" style={{ background: "var(--t-bg-page)" }}>
 
       {/* ── Sidebar ────────────────────────────────────────────── */}
       <aside className="w-[196px] fixed left-0 top-0 h-full flex flex-col z-30 transition-colors duration-500"
@@ -459,44 +472,49 @@ export default function App() {
         {/* Logo */}
         <div className="px-4 h-[58px] flex items-center flex-shrink-0" style={{ borderBottom: `1px solid ${headerBorder}` }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#C3C7A6] flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "var(--t-border)" }}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <circle cx="6.5" cy="6.5" r="2" fill="#4A5C35"/>
-                <circle cx="6.5" cy="1.5" r="1.1" fill="#4A5C35"/>
-                <circle cx="6.5" cy="11.5" r="1.1" fill="#4A5C35"/>
-                <circle cx="1.5" cy="6.5" r="1.1" fill="#4A5C35"/>
-                <circle cx="11.5" cy="6.5" r="1.1" fill="#4A5C35"/>
+                <circle cx="6.5" cy="6.5" r="2" fill="var(--t-primary)"/>
+                <circle cx="6.5" cy="1.5" r="1.1" fill="var(--t-primary)"/>
+                <circle cx="6.5" cy="11.5" r="1.1" fill="var(--t-primary)"/>
+                <circle cx="1.5" cy="6.5" r="1.1" fill="var(--t-primary)"/>
+                <circle cx="11.5" cy="6.5" r="1.1" fill="var(--t-primary)"/>
               </svg>
             </div>
             <div>
-              <div style={lora} className="text-[15px] text-[#4A5C35] leading-tight">Planorama</div>
-              <div className="text-[9px] text-[#8A9170] font-medium mt-0.5">your personal planner</div>
+              <div style={{ ...lora, color: "var(--t-primary)" }} className="text-[15px] leading-tight">Planorama</div>
+              <div className="text-[9px] font-medium mt-0.5" style={{ color: "var(--t-text-muted)" }}>your personal planner</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-          <p className="text-[9px] font-bold text-[#8A9170] uppercase tracking-[0.7px] px-2 mb-1.5">Main</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.7px] px-2 mb-1.5" style={{ color: "var(--t-text-muted)" }}>Main</p>
           {NAV_MAIN.map(item => (
             <button key={item.id} onClick={() => { setPage(item.id); if (item.id !== "pomodoro") setPomodoroColor(null); }}
+              style={page === item.id ? { background: "var(--t-primary)", color: "var(--t-on-primary)" } : {}}
               className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
-                page === item.id ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
+                page === item.id ? "" : "nav-item-inactive"
               }`}>
               <span className="flex-shrink-0">{item.icon}</span>
               <span>{item.label}</span>
               {item.badge && (
-                <span className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                  page === item.id ? "bg-[#6B7A4A] text-[#EEF1DE]" : "bg-[#C3C7A6] text-[#4A5C35]"
-                }`}>{item.badge}</span>
+                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={page === item.id
+                    ? { background: "var(--t-bg-accent)", color: "var(--t-primary)" }
+                    : { background: "var(--t-border)", color: "var(--t-primary)" }}>
+                  {item.badge}
+                </span>
               )}
             </button>
           ))}
-          <p className="text-[9px] font-bold text-[#8A9170] uppercase tracking-[0.7px] px-2 mt-4 mb-1.5">Tools</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.7px] px-2 mt-4 mb-1.5" style={{ color: "var(--t-text-muted)" }}>Tools</p>
           {NAV_TOOLS.map(item => (
             <button key={item.id} onClick={() => { setPage(item.id); if (item.id !== "pomodoro") setPomodoroColor(null); }}
+              style={page === item.id ? { background: "var(--t-primary)", color: "var(--t-on-primary)" } : {}}
               className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
-                page === item.id ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
+                page === item.id ? "" : "nav-item-inactive"
               }`}>
               <span className="flex-shrink-0">{item.icon}</span>
               <span>{item.label}</span>
@@ -507,8 +525,9 @@ export default function App() {
         {/* Settings + User card */}
         <div className="px-3 pb-4 pt-3 flex flex-col gap-2" style={{ borderTop: `1px solid ${headerBorder}` }}>
           <button onClick={() => { setPage("settings"); setPomodoroColor(null); }}
+            style={page === "settings" ? { background: "var(--t-primary)", color: "var(--t-on-primary)" } : {}}
             className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
-              page === "settings" ? "bg-[#4A5C35] text-[#EEF1DE]" : "text-[#6B7255] hover:bg-[#DDE0C0]"
+              page === "settings" ? "" : "nav-item-inactive"
             }`}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="8" cy="8" r="2.2"/>
@@ -516,16 +535,16 @@ export default function App() {
             </svg>
             <span>Settings</span>
           </button>
-          <div className="bg-[#DDE0C0] rounded-xl p-2.5 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-[#4A5C35] flex items-center justify-center flex-shrink-0">
-              <span className="text-[9px] font-bold text-[#EEF1DE]">{initials}</span>
+          <div className="rounded-xl p-2.5 flex items-center gap-2" style={{ background: "var(--t-bg-accent)" }}>
+            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--t-primary)" }}>
+              <span className="text-[9px] font-bold" style={{ color: "var(--t-on-primary)" }}>{initials}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[11.5px] font-bold text-[#3A4A28] leading-tight truncate">{displayName}</p>
-              <p className="text-[9px] text-[#8A9170] truncate">{session.user.email}</p>
+              <p className="text-[11.5px] font-bold leading-tight truncate" style={{ color: "var(--t-text-dark)" }}>{displayName}</p>
+              <p className="text-[9px] truncate" style={{ color: "var(--t-text-muted)" }}>{session.user.email}</p>
             </div>
             <button onClick={handleSignOut}
-              className="text-[8.5px] text-[#8A9170] hover:text-[#4A5C35] transition-colors flex-shrink-0 font-semibold">
+              className="text-[8.5px] transition-colors flex-shrink-0 font-semibold" style={{ color: "var(--t-text-muted)" }}>
               Sign out
             </button>
           </div>
@@ -539,10 +558,10 @@ export default function App() {
         <header className="px-7 h-[58px] flex items-center justify-between sticky top-0 z-20 flex-shrink-0 transition-colors duration-500"
           style={{ background: headerBg, borderBottom: `1px solid ${headerBorder}` }}>
           <div>
-            <p style={lora} className="text-base text-[#3A4A28] leading-snug">
+            <p style={{ ...lora, color: "var(--t-text-dark)" }} className="text-base leading-snug">
               {timeGreeting}, {displayName}
             </p>
-            <p className="text-[10.5px] text-[#8A9170] font-medium mt-0.5">
+            <p className="text-[10.5px] font-medium mt-0.5" style={{ color: "var(--t-text-muted)" }}>
               {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               {activeTasks.length > 0 && <span className="ml-1">· {activeTasks.length} task{activeTasks.length !== 1 ? "s" : ""} remaining</span>}
             </p>
@@ -573,7 +592,8 @@ export default function App() {
               onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted} />
           )}
           {page === "settings" && (
-            <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut} />
+            <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut}
+              themeKey={themeKey} onThemeChange={handleThemeChange} />
           )}
         </main>
       </div>

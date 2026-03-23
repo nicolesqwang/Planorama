@@ -20,25 +20,25 @@ function getUrgencyStyle(rawDays) {
   if (rawDays < 0)    return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
   if (rawDays <= 1)   return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
   if (rawDays <= 7)   return "bg-[#F1F0C8] text-[#7A7230] font-semibold";
-  return "bg-[#D9E0C8] text-[#4A5C35] font-semibold";
+  return "bg-[var(--t-bg-accent)] text-[var(--t-primary)] font-semibold";
 }
 
 function getCatStyle(catName, categories) {
-  return categories.find(c => c.name === catName) || { bg: "#E9ECCF", text: "#6B7255", border: "#C3C7A6" };
+  return categories.find(c => c.name === catName) || { bg: "var(--t-bg-input)", text: "var(--t-text-med)", border: "var(--t-border)" };
 }
 
 // ── Stat List Modal ─────────────────────────────────────────────
 function StatListModal({ title, items, categories, onClose, onSelectItem }) {
   return (
     <div className="fixed inset-0 bg-black/25 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl w-[500px] max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-[#DDE0C0] flex items-center justify-between shrink-0">
-          <h2 style={lora} className="text-base text-[#3A4A28]">{title}</h2>
-          <button onClick={onClose} className="text-[#8A9170] hover:text-[#3A4A28] text-xl leading-none">×</button>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[70vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-[var(--t-bg-accent)] flex items-center justify-between shrink-0">
+          <h2 style={lora} className="text-base text-[var(--t-text-dark)]">{title}</h2>
+          <button onClick={onClose} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl leading-none">×</button>
         </div>
         <div className="overflow-y-auto flex-1">
           {items.length === 0 && (
-            <p className="text-sm text-[#8A9170] px-6 py-10 text-center font-medium">Nothing here — you&apos;re all clear!</p>
+            <p className="text-sm text-[var(--t-text-muted)] px-6 py-10 text-center font-medium">Nothing here — you&apos;re all clear!</p>
           )}
           {items.map(item => {
             const date = item._date;
@@ -49,10 +49,10 @@ function StatListModal({ title, items, categories, onClose, onSelectItem }) {
             return (
               <div key={`${item._type}-${item.id}`}
                 onClick={() => onSelectItem(item)}
-                className="px-6 py-4 border-b border-[#DDE0C0] flex items-center justify-between hover:bg-[#EDEEDC] cursor-pointer transition-colors">
+                className="px-6 py-4 border-b border-[var(--t-bg-accent)] flex items-center justify-between hover:bg-[var(--t-bg-card)] cursor-pointer transition-colors">
                 <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-sm font-semibold text-[#3A4A28] truncate">{item.name}</span>
-                  <span className="text-xs text-[#8A9170] font-medium">
+                  <span className="text-sm font-semibold text-[var(--t-text-dark)] truncate">{item.name}</span>
+                  <span className="text-xs text-[var(--t-text-muted)] font-medium">
                     {new Date(date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                     {time && ` · ${time}`}
                   </span>
@@ -93,15 +93,15 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
 
   return (
     <div className="fixed inset-0 bg-black/25 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           {onBack ? (
-            <button onClick={onBack} className="text-sm text-[#8A9170] hover:text-[#3A4A28] flex items-center gap-1 transition-colors font-semibold">← Back</button>
+            <button onClick={onBack} className="text-sm text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] flex items-center gap-1 transition-colors font-semibold">← Back</button>
           ) : <div />}
-          <button onClick={onClose} className="text-[#8A9170] hover:text-[#3A4A28] text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl leading-none">×</button>
         </div>
         <div className="flex items-center gap-2 mb-4">
-          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${isTask ? "bg-[#D9E4E0] text-[#4A5C35]" : "bg-[#EDE8F5] text-[#5A4A7A]"}`}>
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${isTask ? "bg-[var(--t-bg-accent)] text-[var(--t-primary)]" : "bg-[#EDE8F5] text-[#5A4A7A]"}`}>
             {isTask ? "Task" : "Event"}
           </span>
           <span className={`text-xs px-3 py-0.5 rounded-full ${getUrgencyStyle(raw)}`}>
@@ -110,35 +110,35 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
         </div>
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">{isTask ? "Task" : "Event"} Name</label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">{isTask ? "Task" : "Event"} Name</label>
             {isTask ? (
               <input value={name} onChange={e => setName(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
             ) : (
-              <p className="text-base font-semibold text-[#3A4A28]">{item.name}</p>
+              <p className="text-base font-semibold text-[var(--t-text-dark)]">{item.name}</p>
             )}
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">{isTask ? "Due Date" : "Date"}</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">{isTask ? "Due Date" : "Date"}</label>
               <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} disabled={!isTask}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 disabled:opacity-60 font-medium text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 disabled:opacity-60 font-medium text-[var(--t-text-dark)]" />
             </div>
             <div className="w-36">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Time</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Time</label>
               <input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">
-              Category {isTask && <span className="text-[#4A5C35]">*</span>}
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">
+              Category {isTask && <span className="text-[var(--t-primary)]">*</span>}
             </label>
             <div className="flex flex-wrap gap-2">
               {isTask ? categories.map(c => (
                 <button key={c.name} onClick={() => toggleCat(c.name)}
                   className="text-xs font-bold px-3 py-1 rounded-full border transition-all"
-                  style={selCats.includes(c.name) ? { background: c.bg, color: c.text, borderColor: c.border } : { background: "#E9ECCF", color: "#8A9170", borderColor: "#C3C7A6" }}>
+                  style={selCats.includes(c.name) ? { background: c.bg, color: c.text, borderColor: c.border } : { background: "var(--t-bg-input)", color: "var(--t-text-muted)", borderColor: "var(--t-border)" }}>
                   {c.name}
                 </button>
               )) : item.category && (() => { const s = getCatStyle(item.category, categories); return (
@@ -149,11 +149,11 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
           </div>
           {isTask && taskTypes.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Type <span className="normal-case font-normal">(optional)</span></label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Type <span className="normal-case font-normal">(optional)</span></label>
               <div className="flex flex-wrap gap-2">
                 {taskTypes.map(t => (
                   <button key={t.id} onClick={() => toggleType(t.name)}
-                    className={`text-xs font-bold px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[#4A5C35] text-[#EEF1DE] border-[#4A5C35]" : "bg-[#E9ECCF] text-[#8A9170] border-[#C3C7A6]"}`}>
+                    className={`text-xs font-bold px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-muted)] border-[var(--t-border)]"}`}>
                     {t.name}
                   </button>
                 ))}
@@ -162,7 +162,7 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
           )}
           {!isTask && (item.event_types || []).length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Event Type</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Event Type</label>
               <div className="flex flex-wrap gap-2">
                 {(item.event_types || []).map(t => (
                   <span key={t} className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EDE8F5] text-[#5A4A7A]">{t}</span>
@@ -170,16 +170,16 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
               </div>
             </div>
           )}
-          {!isTask && item.duration && <div className="text-sm text-[#8A9170] font-medium">{item.duration}</div>}
+          {!isTask && item.duration && <div className="text-sm text-[var(--t-text-muted)] font-medium">{item.duration}</div>}
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Notes</label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Notes</label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add notes..."
-              className="w-full h-20 text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+              className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
         <button onClick={() => { if (isTask) onSaveTask(item.id, { name, dueDate, dueTime, categories: selCats, types: selTypes, notes }); onClose(); }}
           disabled={!canSave}
-          className="mt-5 w-full bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 text-[#EEF1DE] text-sm font-semibold py-2.5 rounded-xl transition-colors">
+          className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
           {isTask ? "Save Changes" : "Close"}
         </button>
       </div>
@@ -202,41 +202,41 @@ function AddEventModal({ onClose, onAdd, categories, eventTypes, addEventType })
 
   return (
     <div className="fixed inset-0 bg-black/25 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-[#8A9170] hover:text-[#3A4A28] text-xl leading-none">×</button>
-        <h2 style={lora} className="text-lg text-[#3A4A28] mb-5">Add Event</h2>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl leading-none">×</button>
+        <h2 style={lora} className="text-lg text-[var(--t-text-dark)] mb-5">Add Event</h2>
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Name</label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Name</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. MFB Weekly Sync"
-              className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+              className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Date</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Date</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
             </div>
             <div className="w-32">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Time</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Time</label>
               <input type="time" value={time} onChange={e => setTime(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
             </div>
             <div className="w-28">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Duration</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Duration</label>
               <select value={duration} onChange={e => setDuration(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]">
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]">
                 {["15 min","30 min","45 min","1 hr","1.5 hr","2 hr","3 hr"].map(d => <option key={d}>{d}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Category <span className="text-[#4A5C35]">*</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Category <span className="text-[var(--t-primary)]">*</span></label>
             <div className="flex flex-wrap gap-2">
               {categories.map(c => (
                 <button key={c.name} onClick={() => setCategory(c.name)}
                   className="text-xs font-bold px-3 py-1 rounded-full border transition-all"
-                  style={category === c.name ? { background: c.bg, color: c.text, borderColor: c.border } : { background: "#E9ECCF", color: "#8A9170", borderColor: "#C3C7A6" }}>
+                  style={category === c.name ? { background: c.bg, color: c.text, borderColor: c.border } : { background: "var(--t-bg-input)", color: "var(--t-text-muted)", borderColor: "var(--t-border)" }}>
                   {c.name}
                 </button>
               ))}
@@ -244,31 +244,31 @@ function AddEventModal({ onClose, onAdd, categories, eventTypes, addEventType })
             {!category && <p className="text-xs text-[#9B5B3A] mt-1 font-medium">Please select a category</p>}
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-2">Event Type <span className="normal-case font-normal">(optional)</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Event Type <span className="normal-case font-normal">(optional)</span></label>
             <div className="flex flex-wrap gap-2 mb-2">
               {eventTypes.map(t => (
                 <button key={t.id} onClick={() => toggleType(t.name)}
-                  className={`text-xs font-bold px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[#4A5C35] text-[#EEF1DE] border-[#4A5C35]" : "bg-[#E9ECCF] text-[#8A9170] border-[#C3C7A6]"}`}>
+                  className={`text-xs font-bold px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-muted)] border-[var(--t-border)]"}`}>
                   {t.name}
                 </button>
               ))}
             </div>
             <div className="flex gap-2">
               <input value={newType} onChange={e => setNewType(e.target.value)} placeholder="Add custom type..."
-                className="flex-1 text-xs bg-[#E9ECCF] border border-[#C3C7A6] rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+                className="flex-1 text-xs bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
               <button onClick={async () => { if (newType.trim()) { await addEventType(newType.trim()); setNewType(""); }}}
-                className="text-xs bg-[#DDE0C0] hover:bg-[#C3C7A6] text-[#3A4A28] font-semibold px-3 py-1.5 rounded-lg transition-colors">+ Add</button>
+                className="text-xs bg-[var(--t-bg-accent)] hover:bg-[var(--t-border)] text-[var(--t-text-dark)] font-semibold px-3 py-1.5 rounded-lg transition-colors">+ Add</button>
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Agenda, location, link..."
-              className="w-full h-20 text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+              className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
         <button onClick={() => { onAdd({ name, date, time, duration, category, event_types: selTypes, notes }); onClose(); }}
           disabled={!canSubmit}
-          className="mt-5 w-full bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 disabled:cursor-not-allowed text-[#EEF1DE] text-sm font-semibold py-2.5 rounded-xl transition-colors">
+          className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
           Add Event
         </button>
       </div>
@@ -290,35 +290,35 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes = [] }) {
 
   return (
     <div className="fixed inset-0 bg-black/25 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl w-[480px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-[#8A9170] hover:text-[#3A4A28] text-xl leading-none">×</button>
-        <h2 style={lora} className="text-lg text-[#3A4A28] mb-5">Add Task</h2>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[480px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl leading-none">×</button>
+        <h2 style={lora} className="text-lg text-[var(--t-text-dark)] mb-5">Add Task</h2>
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Task Name</label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Task Name</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. CS HW 7"
-              className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+              className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Due Date</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Date</label>
               <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
             </div>
             <div className="w-36">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Due Time</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Time</label>
               <input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Category <span className="text-[#4A5C35]">*</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Category <span className="text-[var(--t-primary)]">*</span></label>
             <div className="flex flex-wrap gap-2">
-              {categories.length === 0 && <p className="text-xs text-[#8A9170] font-medium">No categories yet — add some in the Tasks page first!</p>}
+              {categories.length === 0 && <p className="text-xs text-[var(--t-text-muted)] font-medium">No categories yet — add some in the Tasks page first!</p>}
               {categories.map(c => (
                 <button key={c.name} onClick={() => toggleCat(c.name)}
                   className="text-xs font-bold px-3 py-1 rounded-full border transition-all"
-                  style={selCats.includes(c.name) ? { background: c.bg, color: c.text, borderColor: c.border } : { background: "#E9ECCF", color: "#8A9170", borderColor: "#C3C7A6" }}>
+                  style={selCats.includes(c.name) ? { background: c.bg, color: c.text, borderColor: c.border } : { background: "var(--t-bg-input)", color: "var(--t-text-muted)", borderColor: "var(--t-border)" }}>
                   {c.name}
                 </button>
               ))}
@@ -327,11 +327,11 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes = [] }) {
           </div>
           {taskTypes.length > 0 && (
             <div>
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
               <div className="flex flex-wrap gap-2">
                 {taskTypes.map(t => (
                   <button key={t.id} onClick={() => toggleType(t.name)}
-                    className={`text-xs font-bold px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[#4A5C35] text-[#EEF1DE] border-[#4A5C35]" : "bg-[#E9ECCF] text-[#8A9170] border-[#C3C7A6]"}`}>
+                    className={`text-xs font-bold px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-muted)] border-[var(--t-border)]"}`}>
                     {t.name}
                   </button>
                 ))}
@@ -339,14 +339,14 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes = [] }) {
             </div>
           )}
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
             <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any extra details..."
-              className="w-full h-20 text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+              className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
         <button onClick={() => { onAdd({ name, dueDate, dueTime, categories: selCats, types: selTypes, done: false, notes }); onClose(); }}
           disabled={!canSubmit}
-          className="mt-5 w-full bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 disabled:cursor-not-allowed text-[#EEF1DE] text-sm font-semibold py-2.5 rounded-xl transition-colors">
+          className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
           Add Task
         </button>
       </div>
@@ -357,21 +357,21 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes = [] }) {
 // ── Upcoming panel ──────────────────────────────────────────────
 function UpcomingPanel({ items, categories, onSelectItem }) {
   return (
-    <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-[14px] p-[13px_14px]">
+    <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-[14px] p-[13px_14px]">
       <div className="flex items-center justify-between mb-3">
-        <h3 style={lora} className="text-[13px] text-[#3A4A28]">Upcoming</h3>
-        <span className="text-[10px] text-[#8A9170] font-medium">next 7 days</span>
+        <h3 style={lora} className="text-[13px] text-[var(--t-text-dark)]">Upcoming</h3>
+        <span className="text-[10px] text-[var(--t-text-muted)] font-medium">next 7 days</span>
       </div>
       <div className="flex flex-col">
-        {items.length === 0 && <p className="text-xs text-[#8A9170] font-medium py-3 text-center">Nothing due this week!</p>}
+        {items.length === 0 && <p className="text-xs text-[var(--t-text-muted)] font-medium py-3 text-center">Nothing due this week!</p>}
         {items.slice(0, 7).map(task => {
           const { raw } = getTimeLeft(task.due_date, task.due_time);
           const catStyle = getCatStyle(task.categories?.[0], categories);
           return (
             <div key={task.id} onClick={() => onSelectItem(task)}
-              className="flex items-center gap-2.5 py-2 border-b border-[#DDE0C0] last:border-0 cursor-pointer hover:bg-[#EDEEDC] rounded-lg px-1.5 -mx-1.5 transition-colors">
+              className="flex items-center gap-2.5 py-2 border-b border-[var(--t-bg-accent)] last:border-0 cursor-pointer hover:bg-[var(--t-bg-card)] rounded-lg px-1.5 -mx-1.5 transition-colors">
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: catStyle.bg, border: `1.5px solid ${catStyle.border}` }} />
-              <span className="text-[12px] font-semibold text-[#3A4A28] flex-1 truncate">{task.name}</span>
+              <span className="text-[12px] font-semibold text-[var(--t-text-dark)] flex-1 truncate">{task.name}</span>
               <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${getUrgencyStyle(raw)}`}>
                 {raw < 0 ? `${Math.abs(Math.round(raw))}d ago` : `${Math.round(Math.max(raw, 0))}d`}
               </span>
@@ -391,16 +391,16 @@ function QuickAddPanel({ onAdd, categories }) {
   const canSubmit = name.trim() && dueDate && selCat;
 
   return (
-    <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-[14px] p-[13px_14px]">
-      <h3 style={lora} className="text-[13px] text-[#3A4A28] mb-3">Quick add</h3>
+    <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-[14px] p-[13px_14px]">
+      <h3 style={lora} className="text-[13px] text-[var(--t-text-dark)] mb-3">Quick add</h3>
       <div className="flex flex-col gap-2">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Task name..."
-          className="w-full text-[11.5px] bg-[#E9ECCF] border border-[#C3C7A6] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28] placeholder:text-[#8A9170]" />
+          className="w-full text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
         <div className="grid grid-cols-2 gap-2">
           <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-            className="text-[11.5px] bg-[#E9ECCF] border border-[#C3C7A6] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]" />
+            className="text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
           <select value={selCat} onChange={e => setSelCat(e.target.value)}
-            className="text-[11.5px] bg-[#E9ECCF] border border-[#C3C7A6] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 font-medium text-[#3A4A28]">
+            className="text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]">
             <option value="">Category</option>
             {categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
@@ -409,7 +409,7 @@ function QuickAddPanel({ onAdd, categories }) {
           onAdd({ name, dueDate, dueTime: "23:59", categories: selCat ? [selCat] : [], types: [], done: false, notes: "" });
           setName(""); setDueDate(""); setSelCat("");
         }} disabled={!canSubmit}
-          className="w-full bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 disabled:cursor-not-allowed text-[#EEF1DE] text-[11.5px] font-semibold py-2 rounded-lg transition-colors">
+          className="w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-[11.5px] font-semibold py-2 rounded-lg transition-colors">
           Add Task
         </button>
       </div>
@@ -438,27 +438,27 @@ function CalendarView({ tasks, events, categories, onSelectItem }) {
   function getItemStyle(item) {
     const catName = item._type === "task" ? item.categories?.[0] : item.category;
     const cat = categories.find(c => c.name === catName);
-    return { bg: cat?.bg || "#E9ECCF", color: cat?.text || "#6B7255", border: `${cat?.border || "#C3C7A6"}55` };
+    return { bg: cat?.bg || "var(--t-bg-input)", color: cat?.text || "var(--t-text-med)", border: `${cat?.border || "var(--t-border)"}55` };
   }
 
   return (
-    <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-[14px] p-5">
+    <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-[14px] p-5">
       <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setCurrent(new Date(year, month-1, 1))} className="text-[#8A9170] hover:text-[#3A4A28] text-lg px-2 transition-colors">‹</button>
-        <h2 style={lora} className="text-base text-[#3A4A28]">{MONTHS[month]} {year}</h2>
-        <button onClick={() => setCurrent(new Date(year, month+1, 1))} className="text-[#8A9170] hover:text-[#3A4A28] text-lg px-2 transition-colors">›</button>
+        <button onClick={() => setCurrent(new Date(year, month-1, 1))} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-lg px-2 transition-colors">‹</button>
+        <h2 style={lora} className="text-base text-[var(--t-text-dark)]">{MONTHS[month]} {year}</h2>
+        <button onClick={() => setCurrent(new Date(year, month+1, 1))} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-lg px-2 transition-colors">›</button>
       </div>
       <div className="grid grid-cols-7 mb-1">
-        {DAYS.map(d => <div key={d} className="text-center text-[9px] font-bold text-[#8A9170] uppercase tracking-[0.7px] py-1">{d}</div>)}
+        {DAYS.map(d => <div key={d} className="text-center text-[9px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] py-1">{d}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {cells.map((day, i) => {
           const items = itemsOnDay(day);
           const hasItems = items.length > 0;
           return (
-            <div key={i} className={`min-h-[54px] rounded-lg p-1.5 transition-colors ${day ? "cursor-pointer" : ""} ${isToday(day) ? "bg-[#D9E4E0] ring-2 ring-[#4A5C35]" : hasItems ? "bg-[#EDEEDC]" : ""}`}>
+            <div key={i} className={`min-h-[54px] rounded-lg p-1.5 transition-colors ${day ? "cursor-pointer" : ""} ${isToday(day) ? "bg-[var(--t-bg-accent)] ring-2 ring-[var(--t-primary)]" : hasItems ? "bg-[var(--t-bg-card)]" : ""}`}>
               {day && (<>
-                <span className={`text-[9.5px] block mb-0.5 ${isToday(day) ? "font-bold text-[#3A4A28]" : "font-semibold text-[#8A9170]"}`}>{day}</span>
+                <span className={`text-[9.5px] block mb-0.5 ${isToday(day) ? "font-bold text-[var(--t-text-dark)]" : "font-semibold text-[var(--t-text-muted)]"}`}>{day}</span>
                 <div className="flex flex-col gap-0.5">
                   {items.slice(0,3).map(item => {
                     const s = getItemStyle(item);
@@ -471,16 +471,16 @@ function CalendarView({ tasks, events, categories, onSelectItem }) {
                       </div>
                     );
                   })}
-                  {items.length > 3 && <span className="text-[9px] text-[#8A9170] font-medium pl-1">+{items.length-3}</span>}
+                  {items.length > 3 && <span className="text-[9px] text-[var(--t-text-muted)] font-medium pl-1">+{items.length-3}</span>}
                 </div>
               </>)}
             </div>
           );
         })}
       </div>
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#DDE0C0]">
-        <span className="text-[10px] text-[#8A9170] font-semibold">◆ Task</span>
-        <span className="text-[10px] text-[#8A9170] font-semibold">● Event</span>
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--t-bg-accent)]">
+        <span className="text-[10px] text-[var(--t-text-muted)] font-semibold">◆ Task</span>
+        <span className="text-[10px] text-[var(--t-text-muted)] font-semibold">● Event</span>
       </div>
     </div>
   );
@@ -494,26 +494,26 @@ function ListView({ tasks, events, categories, onSelectItem }) {
   ].sort((a,b) => new Date(`${a._date}T${a._time || "00:00"}`) - new Date(`${b._date}T${b._time || "00:00"}`));
 
   return (
-    <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-[14px] overflow-hidden">
-      <div className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-3 bg-[#DDE0C0] text-[9.5px] font-bold text-[#8A9170] uppercase tracking-[0.7px]">
+    <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-[14px] overflow-hidden">
+      <div className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-3 bg-[var(--t-bg-accent)] text-[9.5px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
         <span>Name</span><span>Date</span><span>Category</span><span className="text-center">Type</span>
       </div>
-      {all.length === 0 && <p className="text-sm text-[#8A9170] px-6 py-10 text-center font-medium">No upcoming tasks or events!</p>}
+      {all.length === 0 && <p className="text-sm text-[var(--t-text-muted)] px-6 py-10 text-center font-medium">No upcoming tasks or events!</p>}
       {all.map(item => {
         const { value, unit, raw } = getTimeLeft(item._date, item._time || "23:59");
         const catName = item._type === "task" ? item.categories?.[0] : item.category;
         const s       = getCatStyle(catName, categories);
         return (
           <div key={`${item._type}-${item.id}`} onClick={() => onSelectItem(item)}
-            className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-4 border-t border-[#DDE0C0] items-center hover:bg-[#EDEEDC] transition-colors cursor-pointer">
-            <span className="text-[12px] text-[#3A4A28] font-semibold">{item.name}</span>
+            className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-4 border-t border-[var(--t-bg-accent)] items-center hover:bg-[var(--t-bg-card)] transition-colors cursor-pointer">
+            <span className="text-[12px] text-[var(--t-text-dark)] font-semibold">{item.name}</span>
             <span className={`text-xs px-2 py-0.5 rounded-md w-fit ${getUrgencyStyle(raw)}`}>
               {raw < 0 ? `${Math.abs(Math.round(raw * 10) / 10)}d ago` : unit === "min" ? `${value}m` : new Date(item._date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
             </span>
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full w-fit"
               style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>{catName || "—"}</span>
             <div className="flex justify-center">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item._type === "event" ? "bg-[#EDE8F5] text-[#5A4A7A]" : "bg-[#D9E4E0] text-[#4A5C35]"}`}>{item._type}</span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item._type === "event" ? "bg-[#EDE8F5] text-[#5A4A7A]" : "bg-[var(--t-bg-accent)] text-[var(--t-primary)]"}`}>{item._type}</span>
             </div>
           </div>
         );
@@ -551,30 +551,30 @@ export default function Dashboard({
     .map(e => ({ ...e, _type: "event", _date: e.date, _time: e.time }));
 
   const STAT_CONFIG = [
-    { key: "week",      label: "Due This Week", items: weekItems,          bg: "bg-[#FFF3CE]", border: "border-[#E8D88A]", valueColor: "text-[#3A4A28]" },
+    { key: "week",      label: "Due This Week", items: weekItems,          bg: "bg-[#FFF3CE]", border: "border-[#E8D88A]", valueColor: "text-[var(--t-text-dark)]" },
     { key: "overdue",   label: "Overdue",        items: overdueItems,       bg: "bg-[#C8DFF5]", border: "border-[#94BDE0]", valueColor: "text-[#2A4A6B]" },
-    { key: "completed", label: "Completed",      items: completedItems,     bg: "bg-[#F9C9C9]", border: "border-[#E89090]", valueColor: "text-[#3A4A28]" },
+    { key: "completed", label: "Completed",      items: completedItems,     bg: "bg-[#F9C9C9]", border: "border-[#E89090]", valueColor: "text-[var(--t-text-dark)]" },
     { key: "events",    label: "Events",         items: upcomingEventItems, bg: "bg-[#A8C896]", border: "border-[#7AAB66]", valueColor: "text-[#2A4A1A]" },
   ];
 
   return (
-    <div className="bg-[#F7F8EE] min-h-screen p-[18px_22px]">
+    <div className="bg-[var(--t-bg-page)] min-h-screen p-[18px_22px]">
       <div className="flex items-center justify-between mb-4">
-        <h2 style={lora} className="text-xl text-[#3A4A28]">{calendarOnly ? "Calendar" : "Overview"}</h2>
+        <h2 style={lora} className="text-xl text-[var(--t-text-dark)]">{calendarOnly ? "Calendar" : "Overview"}</h2>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowAddTask(true)}
-            className="bg-[#DDE0C0] border border-[#C3C7A6] hover:bg-[#C3C7A6] text-[#5A6440] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
+            className="bg-[var(--t-bg-accent)] border border-[var(--t-border)] hover:bg-[var(--t-border)] text-[var(--t-text-med)] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
             + Task
           </button>
           <button onClick={() => setShowAddEvent(true)}
-            className="bg-[#DDE0C0] border border-[#C3C7A6] hover:bg-[#C3C7A6] text-[#5A6440] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
+            className="bg-[var(--t-bg-accent)] border border-[var(--t-border)] hover:bg-[var(--t-border)] text-[var(--t-text-med)] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
             + Event
           </button>
           {!calendarOnly && (
-            <div className="flex items-center gap-1 bg-[#DDE0C0] border border-[#C3C7A6] rounded-[9px] p-1 ml-1">
+            <div className="flex items-center gap-1 bg-[var(--t-bg-accent)] border border-[var(--t-border)] rounded-[9px] p-1 ml-1">
               {[["calendar","Calendar"],["list","List"]].map(([id,label]) => (
                 <button key={id} onClick={() => setView(id)}
-                  className={`px-3.5 py-1.5 rounded-[7px] text-[11.5px] font-bold transition-all ${view===id ? "bg-[#F4F5E8] text-[#3A4A28] shadow-sm" : "text-[#6B7255] hover:text-[#3A4A28]"}`}>
+                  className={`px-3.5 py-1.5 rounded-[7px] text-[11.5px] font-bold transition-all ${view===id ? "bg-[var(--t-bg-card)] text-[var(--t-text-dark)] shadow-sm" : "text-[var(--t-text-med)] hover:text-[var(--t-text-dark)]"}`}>
                   {label}
                 </button>
               ))}
@@ -588,7 +588,7 @@ export default function Dashboard({
           {STAT_CONFIG.map(s => (
             <div key={s.key} onClick={() => setStatModal(s.key)}
               className={`${s.bg} border ${s.border} rounded-[13px] px-[15px] py-[13px] cursor-pointer hover:opacity-90 transition-opacity`}>
-              <p className="text-[9.5px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">{s.label}</p>
+              <p className="text-[9.5px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">{s.label}</p>
               <p className={`text-[26px] font-bold leading-none ${s.valueColor}`}>{s.items.length}</p>
             </div>
           ))}

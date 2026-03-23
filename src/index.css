@@ -1,2 +1,21 @@
 @import "tailwindcss";
 body { font-family: 'Nunito', system-ui, sans-serif; }
+
+/* ── Theme CSS variable defaults (green) ── */
+:root {
+  --t-primary: #4A5C35;
+  --t-primary-hover: #3D4D2C;
+  --t-on-primary: #EEF1DE;
+  --t-bg-page: #F7F8EE;
+  --t-bg-card: #F4F5E8;
+  --t-bg-input: #E9ECCF;
+  --t-bg-accent: #DDE0C0;
+  --t-border: #C3C7A6;
+  --t-text-dark: #3A4A28;
+  --t-text-med: #6B7255;
+  --t-text-muted: #8A9170;
+}
+
+/* Nav hover — needs CSS class since Tailwind can't do hover: with CSS vars in arbitrary values */
+.nav-item-inactive { color: var(--t-text-med); }
+.nav-item-inactive:hover { background-color: var(--t-bg-accent); }

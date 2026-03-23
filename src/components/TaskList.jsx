@@ -21,11 +21,11 @@ function getUrgencyStyle(rawDays) {
   if (rawDays <= 5/1440) return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
   if (rawDays <= 1)      return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
   if (rawDays <= 5)      return "bg-[#F1F0C8] text-[#7A7230] font-semibold";
-  return "bg-[#D9E0C8] text-[#4A5C35] font-semibold";
+  return "bg-[var(--t-bg-accent)] text-[var(--t-primary)] font-semibold";
 }
 
 function CategoryPill({ cat, categories }) {
-  const s = categories.find(c => c.name === cat) || { bg: "#E9ECCF", text: "#6B7255", border: "#C3C7A6" };
+  const s = categories.find(c => c.name === cat) || { bg: "var(--t-bg-input)", text: "var(--t-text-med)", border: "var(--t-border)" };
   return (
     <span className="text-xs font-medium px-2.5 py-0.5 rounded-full"
       style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>{cat}</span>
@@ -89,21 +89,21 @@ function CatColorForm({ name, bg, text, border, onNameChange, onBgChange, onText
   return (
     <>
       <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="e.g. Biology, Economics, Work"
-        className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28] placeholder:text-[#8A9170]" />
+        className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
       <div className="flex gap-4 items-end flex-wrap">
-        <label className="flex flex-col gap-1 text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px]">
+        <label className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
           Background
           <input type="color" value={bg} onChange={e => onBgChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
         </label>
-        <label className="flex flex-col gap-1 text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px]">
-          <span className="flex items-center gap-1">Text {!userEditedText && bgTouched && <span className="text-[#4A5C35] text-[10px]">auto</span>}</span>
+        <label className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
+          <span className="flex items-center gap-1">Text {!userEditedText && bgTouched && <span className="text-[var(--t-primary)] text-[10px]">auto</span>}</span>
           <input type="color" value={text} onChange={e => onTextChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
         </label>
-        <label className="flex flex-col gap-1 text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px]">
-          <span className="flex items-center gap-1">Border {!userEditedBorder && bgTouched && <span className="text-[#4A5C35] text-[10px]">auto</span>}</span>
+        <label className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
+          <span className="flex items-center gap-1">Border {!userEditedBorder && bgTouched && <span className="text-[var(--t-primary)] text-[10px]">auto</span>}</span>
           <input type="color" value={border} onChange={e => onBorderChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
         </label>
-        <div className="flex flex-col gap-1 text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px]">
+        <div className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
           Preview
           <span className="text-xs font-medium px-3 py-1 rounded-full mt-1" style={{ background: bg, color: text, border: `1px solid ${border}` }}>
             {name || "Preview"}
@@ -111,21 +111,21 @@ function CatColorForm({ name, bg, text, border, onNameChange, onBgChange, onText
         </div>
       </div>
       {bgTouched && (!userEditedText || !userEditedBorder) && (
-        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#D9E0C8] border border-[#C3C7A6]">
-          <span className="text-[11px] text-[#6B7255]">Suggested from background:</span>
+        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--t-bg-accent)] border border-[var(--t-border)]">
+          <span className="text-[11px] text-[var(--t-text-med)]">Suggested from background:</span>
           {!userEditedText && (
-            <span className="flex items-center gap-1 text-[11px] text-[#6B7255]">
-              <span className="w-3.5 h-3.5 rounded-full border border-[#C3C7A6] inline-block" style={{ background: text }} />
+            <span className="flex items-center gap-1 text-[11px] text-[var(--t-text-med)]">
+              <span className="w-3.5 h-3.5 rounded-full border border-[var(--t-border)] inline-block" style={{ background: text }} />
               text
             </span>
           )}
           {!userEditedBorder && (
-            <span className="flex items-center gap-1 text-[11px] text-[#6B7255]">
-              <span className="w-3.5 h-3.5 rounded-full border border-[#C3C7A6] inline-block" style={{ background: border }} />
+            <span className="flex items-center gap-1 text-[11px] text-[var(--t-text-med)]">
+              <span className="w-3.5 h-3.5 rounded-full border border-[var(--t-border)] inline-block" style={{ background: border }} />
               border
             </span>
           )}
-          <span className="text-[10px] text-[#8A9170] ml-auto">Edit the pickers above to override</span>
+          <span className="text-[10px] text-[var(--t-text-muted)] ml-auto">Edit the pickers above to override</span>
         </div>
       )}
     </>
@@ -137,9 +137,9 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
   const [editingCatId, setEditingCatId] = useState(null);
 
   const [catName, setCatName]     = useState("");
-  const [catBg, setCatBg]         = useState("#D9E0C8");
-  const [catText, setCatText]     = useState("#4A5C35");
-  const [catBorder, setCatBorder] = useState("#C3C7A6");
+  const [catBg, setCatBg]         = useState("var(--t-bg-accent)");
+  const [catText, setCatText]     = useState("var(--t-primary)");
+  const [catBorder, setCatBorder] = useState("var(--t-border)");
   const [bgTouched, setBgTouched] = useState(false);
   const [userEditedText, setUserEditedText]   = useState(false);
   const [userEditedBorder, setUserEditedBorder] = useState(false);
@@ -173,7 +173,7 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
     await addCategory({ name: catName.trim(), bg: catBg, text: catText, border: catBorder });
     setCatName(""); setSaving(false);
     setBgTouched(false); setUserEditedText(false); setUserEditedBorder(false);
-    setCatBg("#D9E0C8"); setCatText("#4A5C35"); setCatBorder("#C3C7A6");
+    setCatBg("var(--t-bg-accent)"); setCatText("var(--t-primary)"); setCatBorder("var(--t-border)");
   }
 
   async function handleSaveEdit(id) {
@@ -184,38 +184,38 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl w-[540px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-[#8A9170] hover:text-[#3A4A28] text-xl">✕</button>
-        <h2 style={lora} className="text-xl text-[#3A4A28] mb-4">Manage Categories & Types</h2>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[540px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
+        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-4">Manage Categories & Types</h2>
         <div className="flex gap-2 mb-5">
           {["categories","types"].map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-full text-sm capitalize transition-all ${tab===t ? "bg-[#4A5C35] text-[#EEF1DE]" : "bg-[#E9ECCF] text-[#6B7255] hover:bg-[#DDE0C0]"}`}>{t}</button>
+              className={`px-4 py-1.5 rounded-full text-sm capitalize transition-all ${tab===t ? "bg-[var(--t-primary)] text-[var(--t-on-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] hover:bg-[var(--t-bg-accent)]"}`}>{t}</button>
           ))}
         </div>
 
         {tab === "categories" && (
           <div>
             {categories.length === 0 && (
-              <p className="text-sm text-[#8A9170] mb-4">No categories yet. Add ones like <strong>Math</strong>, <strong>Biology</strong>, or <strong>Work</strong>.</p>
+              <p className="text-sm text-[var(--t-text-muted)] mb-4">No categories yet. Add ones like <strong>Math</strong>, <strong>Biology</strong>, or <strong>Work</strong>.</p>
             )}
             <div className="flex flex-col gap-2 mb-5">
               {categories.map(cat => (
                 <div key={cat.id}>
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E9ECCF]">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--t-bg-input)]">
                     <span className="text-xs font-medium px-3 py-1 rounded-full"
                       style={{ background: cat.bg, color: cat.text, border: `1px solid ${cat.border}` }}>{cat.name}</span>
                     <div className="flex gap-2">
                       <button onClick={() => editingCatId === cat.id ? setEditingCatId(null) : startEdit(cat)}
-                        className="text-xs text-[#8A9170] hover:text-[#4A5C35]">
+                        className="text-xs text-[var(--t-text-muted)] hover:text-[var(--t-primary)]">
                         {editingCatId === cat.id ? "Cancel" : "Edit"}
                       </button>
                       <button onClick={() => removeCategory(cat.id)} className="text-xs text-red-400 hover:text-red-600">Remove</button>
                     </div>
                   </div>
                   {editingCatId === cat.id && (
-                    <div className="bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl p-4 flex flex-col gap-3 mt-1">
-                      <p className="text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px]">Edit Category</p>
+                    <div className="bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4 flex flex-col gap-3 mt-1">
+                      <p className="text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">Edit Category</p>
                       <CatColorForm
                         name={editName} bg={editBg} text={editText} border={editBorder}
                         bgTouched={editBgTouched} userEditedText={editUserEditedText} userEditedBorder={editUserEditedBorder}
@@ -225,7 +225,7 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
                         onBorderChange={v => { setEditBorder(v); setEditUserEditedBorder(true); }}
                       />
                       <button onClick={() => handleSaveEdit(cat.id)} disabled={!editName.trim() || saving}
-                        className="bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 text-[#EEF1DE] text-sm font-semibold py-2 rounded-xl transition-colors">
+                        className="bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2 rounded-xl transition-colors">
                         {saving ? "Saving..." : "Save Changes"}
                       </button>
                     </div>
@@ -234,8 +234,8 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
               ))}
             </div>
 
-            <div className="bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl p-4 flex flex-col gap-3">
-              <p className="text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px]">New Category</p>
+            <div className="bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4 flex flex-col gap-3">
+              <p className="text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">New Category</p>
               <CatColorForm
                 name={catName} bg={catBg} text={catText} border={catBorder}
                 bgTouched={bgTouched} userEditedText={userEditedText} userEditedBorder={userEditedBorder}
@@ -245,7 +245,7 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
                 onBorderChange={v => { setCatBorder(v); setUserEditedBorder(true); }}
               />
               <button onClick={handleAddCat} disabled={!catName.trim() || saving}
-                className="bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 text-[#EEF1DE] text-sm font-semibold py-2 rounded-xl transition-colors">
+                className="bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2 rounded-xl transition-colors">
                 {saving ? "Saving..." : "+ Add Category"}
               </button>
             </div>
@@ -256,20 +256,20 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
           <div>
             <div className="flex flex-wrap gap-2 mb-5">
               {taskTypes.map(t => (
-                <div key={t.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E9ECCF] border border-[#C3C7A6] text-sm text-[#3A4A28]">
+                <div key={t.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--t-bg-input)] border border-[var(--t-border)] text-sm text-[var(--t-text-dark)]">
                   {t.name}
-                  <button onClick={() => removeTaskType(t.id)} className="text-[#8A9170] hover:text-red-500 text-xs">✕</button>
+                  <button onClick={() => removeTaskType(t.id)} className="text-[var(--t-text-muted)] hover:text-red-500 text-xs">✕</button>
                 </div>
               ))}
             </div>
-            <div className="bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl p-4 flex gap-3">
+            <div className="bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4 flex gap-3">
               <input value={typeName} onChange={e => setTypeName(e.target.value)}
                 onKeyDown={async e => { if (e.key==="Enter" && typeName.trim()) { await addTaskType(typeName.trim()); setTypeName(""); }}}
                 placeholder="New type (e.g. Workout)"
-                className="flex-1 text-sm bg-[#EEF1DE] border border-[#C3C7A6] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28] placeholder:text-[#8A9170]" />
+                className="flex-1 text-sm bg-[var(--t-on-primary)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
               <button onClick={async () => { if (typeName.trim()) { await addTaskType(typeName.trim()); setTypeName(""); }}}
                 disabled={!typeName.trim()}
-                className="bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 text-[#EEF1DE] text-sm font-semibold px-4 rounded-xl transition-colors">Add</button>
+                className="bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold px-4 rounded-xl transition-colors">Add</button>
             </div>
           </div>
         )}
@@ -294,8 +294,8 @@ function TaskModal({ task, onClose, onSave, onDuplicate, categories, taskTypes }
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e=>e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-[#8A9170] hover:text-[#3A4A28] text-xl">✕</button>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e=>e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
         <div className="flex items-center gap-2 mb-3">
           <span className={`text-xs px-3 py-0.5 rounded-full ${getUrgencyStyle(raw)}`}>
             {raw < 0
@@ -305,58 +305,58 @@ function TaskModal({ task, onClose, onSave, onDuplicate, categories, taskTypes }
         </div>
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Task Name</label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Task Name</label>
             <input value={name} onChange={e=>setName(e.target.value)}
-              className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28]" />
+              className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Due Date</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Date</label>
               <input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
             </div>
             <div className="w-36">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Due Time</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Time</label>
               <input type="time" value={dueTime} onChange={e=>setDueTime(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Category <span className="text-[#4A5C35]">*</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Category <span className="text-[var(--t-primary)]">*</span></label>
             <div className="flex flex-wrap gap-2">
               {categories.map(c => (
                 <button key={c.name} onClick={()=>toggleCat(c.name)}
                   className="text-xs font-medium px-3 py-1 rounded-full border transition-all"
-                  style={selCats.includes(c.name) ? {background:c.bg,color:c.text,borderColor:c.border} : {background:"#E9ECCF",color:"#6B7255",borderColor:"#C3C7A6"}}>
+                  style={selCats.includes(c.name) ? {background:c.bg,color:c.text,borderColor:c.border} : {background:"var(--t-bg-input)",color:"var(--t-text-med)",borderColor:"var(--t-border)"}}>
                   {c.name}
                 </button>
               ))}
             </div>
-            {selCats.length === 0 && <p className="text-xs text-[#4A5C35] mt-1">Please select at least one category</p>}
+            {selCats.length === 0 && <p className="text-xs text-[var(--t-primary)] mt-1">Please select at least one category</p>}
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
             <div className="flex flex-wrap gap-2">
               {taskTypes.map(t => (
                 <button key={t.id} onClick={()=>toggleType(t.name)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[#4A5C35] text-[#EEF1DE] border-[#4A5C35]" : "bg-[#E9ECCF] text-[#6B7255] border-[#C3C7A6]"}`}>
+                  className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)]"}`}>
                   {t.name}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Notes</label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Notes</label>
             <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Add notes..."
-              className="w-full h-24 text-sm text-[#3A4A28] bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#4A5C35]/40 placeholder:text-[#8A9170]" />
+              className="w-full h-24 text-sm text-[var(--t-text-dark)] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={()=>{onDuplicate(task);onClose();}}
-            className="flex-1 bg-[#E9ECCF] hover:bg-[#DDE0C0] border border-[#C3C7A6] text-[#3A4A28] text-sm font-semibold py-2 rounded-xl transition-colors">Duplicate</button>
+            className="flex-1 bg-[var(--t-bg-input)] hover:bg-[var(--t-bg-accent)] border border-[var(--t-border)] text-[var(--t-text-dark)] text-sm font-semibold py-2 rounded-xl transition-colors">Duplicate</button>
           <button onClick={()=>{onSave(task.id,{name,dueDate,dueTime,categories:selCats,types:selTypes,notes});onClose();}}
             disabled={!canSave}
-            className="flex-grow bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 text-[#EEF1DE] text-sm font-semibold py-2 rounded-xl transition-colors">Save Changes</button>
+            className="flex-grow bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2 rounded-xl transition-colors">Save Changes</button>
         </div>
       </div>
     </div>
@@ -377,61 +377,61 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes, prefill }) {
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e=>e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-[#8A9170] hover:text-[#3A4A28] text-xl">✕</button>
-        <h2 style={lora} className="text-xl text-[#3A4A28] mb-5">{prefill ? "Duplicate Task" : "Add New Task"}</h2>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e=>e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
+        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-5">{prefill ? "Duplicate Task" : "Add New Task"}</h2>
         <div className="flex flex-col gap-4">
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Task Name</label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Task Name</label>
             <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Math HW 9"
-              className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28] placeholder:text-[#8A9170]" />
+              className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Due Date</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Date</label>
               <input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
             </div>
             <div className="w-36">
-              <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Due Time</label>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Time</label>
               <input type="time" value={dueTime} onChange={e=>setDueTime(e.target.value)}
-                className="w-full text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28]" />
+                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Category <span className="text-[#4A5C35]">*</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Category <span className="text-[var(--t-primary)]">*</span></label>
             <div className="flex flex-wrap gap-2">
-              {categories.length === 0 && <p className="text-xs text-[#8A9170]">No categories yet — add some in Manage first!</p>}
+              {categories.length === 0 && <p className="text-xs text-[var(--t-text-muted)]">No categories yet — add some in Manage first!</p>}
               {categories.map(c => (
                 <button key={c.name} onClick={()=>toggleCat(c.name)}
                   className="text-xs font-medium px-3 py-1 rounded-full border transition-all"
-                  style={selCats.includes(c.name) ? {background:c.bg,color:c.text,borderColor:c.border} : {background:"#E9ECCF",color:"#6B7255",borderColor:"#C3C7A6"}}>
+                  style={selCats.includes(c.name) ? {background:c.bg,color:c.text,borderColor:c.border} : {background:"var(--t-bg-input)",color:"var(--t-text-med)",borderColor:"var(--t-border)"}}>
                   {c.name}
                 </button>
               ))}
             </div>
-            {categories.length > 0 && selCats.length === 0 && <p className="text-xs text-[#4A5C35] mt-1">Please select at least one category</p>}
+            {categories.length > 0 && selCats.length === 0 && <p className="text-xs text-[var(--t-primary)] mt-1">Please select at least one category</p>}
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
             <div className="flex flex-wrap gap-2">
               {taskTypes.map(t => (
                 <button key={t.id} onClick={()=>toggleType(t.name)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[#4A5C35] text-[#EEF1DE] border-[#4A5C35]" : "bg-[#E9ECCF] text-[#6B7255] border-[#C3C7A6]"}`}>
+                  className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)]"}`}>
                   {t.name}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8A9170] uppercase tracking-[0.7px] mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
             <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Any extra details..."
-              className="w-full h-20 text-sm bg-[#E9ECCF] border border-[#C3C7A6] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[#4A5C35]/40 text-[#3A4A28] placeholder:text-[#8A9170]" />
+              className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
         <button onClick={()=>{onAdd({name,dueDate,dueTime,categories:selCats,types:selTypes,done:false,notes});onClose();}}
           disabled={!canSubmit}
-          className="mt-5 w-full bg-[#4A5C35] hover:bg-[#3D4D2C] disabled:opacity-40 disabled:cursor-not-allowed text-[#EEF1DE] text-sm font-semibold py-2.5 rounded-xl transition-colors">
+          className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
           {prefill ? "Add Duplicate" : "Add Task"}
         </button>
       </div>
@@ -495,17 +495,17 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <div className="min-h-screen bg-[#F7F8EE]">
+    <div className="min-h-screen bg-[var(--t-bg-page)]">
       <div className="max-w-2xl mx-auto px-6 py-10">
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <p className="text-[11px] font-bold text-[#8A9170] uppercase tracking-[0.15em] mb-1">{today}</p>
-            <h1 style={lora} className="text-4xl text-[#3A4A28] leading-tight">My Tasks</h1>
+            <p className="text-[11px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.15em] mb-1">{today}</p>
+            <h1 style={lora} className="text-4xl text-[var(--t-text-dark)] leading-tight">My Tasks</h1>
           </div>
           <div className="flex gap-2 items-center mt-2">
-            <label className="flex items-center gap-1.5 bg-[#E9ECCF] border border-[#C3C7A6] hover:bg-[#DDE0C0] text-[#6B7255] text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer">
+            <label className="flex items-center gap-1.5 bg-[var(--t-bg-input)] border border-[var(--t-border)] hover:bg-[var(--t-bg-accent)] text-[var(--t-text-med)] text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer">
               Import
               <input type="file" accept=".xlsx,.xls,.csv" className="hidden"
                 onChange={async (e) => {
@@ -521,11 +521,11 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
                 }} />
             </label>
             <button onClick={() => setShowManage(true)}
-              className="flex items-center gap-1.5 bg-[#E9ECCF] border border-[#C3C7A6] hover:bg-[#DDE0C0] text-[#6B7255] text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">
+              className="flex items-center gap-1.5 bg-[var(--t-bg-input)] border border-[var(--t-border)] hover:bg-[var(--t-bg-accent)] text-[var(--t-text-med)] text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">
               Manage
             </button>
             <button onClick={() => { setDuplicatePrefill(null); setShowAddTask(true); }}
-              className="flex items-center gap-1.5 bg-[#4A5C35] hover:bg-[#3D4D2C] text-[#EEF1DE] text-xs font-semibold px-4 py-2 rounded-xl transition-all">
+              className="flex items-center gap-1.5 bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] text-[var(--t-on-primary)] text-xs font-semibold px-4 py-2 rounded-xl transition-all">
               + Add Task
             </button>
           </div>
@@ -533,17 +533,17 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
 
         {/* ── Sort / view controls ── */}
         <div className="flex items-center gap-2 mb-5">
-          <span className="text-[11px] font-bold text-[#8A9170] uppercase tracking-wider mr-1">Sort</span>
+          <span className="text-[11px] font-bold text-[var(--t-text-muted)] uppercase tracking-wider mr-1">Sort</span>
           <button onClick={() => setSortByCategory(false)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!sortByCategory ? "bg-[#4A5C35] text-[#EEF1DE] border-[#4A5C35]" : "bg-[#E9ECCF] text-[#6B7255] border-[#C3C7A6] hover:bg-[#DDE0C0]"}`}>
+            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!sortByCategory ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
             Due date
           </button>
           <button onClick={() => setSortByCategory(true)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${sortByCategory ? "bg-[#4A5C35] text-[#EEF1DE] border-[#4A5C35]" : "bg-[#E9ECCF] text-[#6B7255] border-[#C3C7A6] hover:bg-[#DDE0C0]"}`}>
+            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${sortByCategory ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
             Category
           </button>
           <button onClick={() => setDateMode(d => d === "daysLeft" ? "dueDate" : "daysLeft")}
-            className="ml-auto text-[11px] text-[#8A9170] hover:text-[#4A5C35] transition-colors flex items-center gap-1 font-medium">
+            className="ml-auto text-[11px] text-[var(--t-text-muted)] hover:text-[var(--t-primary)] transition-colors flex items-center gap-1 font-medium">
             {dateMode === "daysLeft" ? "Showing days left" : "Showing due date"} <span className="opacity-70">⇄</span>
           </button>
         </div>
@@ -551,8 +551,8 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
         {/* ── Task cards ── */}
         <div className="flex flex-col gap-2.5">
           {activeTasks.length === 0 && (
-            <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl px-6 py-14 text-center">
-              <p className="text-sm text-[#8A9170]">No tasks yet — add your first one above!</p>
+            <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl px-6 py-14 text-center">
+              <p className="text-sm text-[var(--t-text-muted)]">No tasks yet — add your first one above!</p>
             </div>
           )}
 
@@ -561,7 +561,7 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
             const isAnimating = animatingOut.includes(task.id);
             return (
               <div key={task.id}
-                className={`bg-[#F4F5E8] rounded-2xl border border-[#C3C7A6] overflow-hidden transition-opacity duration-500 ${isAnimating ? "opacity-25" : "hover:border-[#A8B090] hover:shadow-sm"}`}>
+                className={`bg-[var(--t-bg-card)] rounded-2xl border border-[var(--t-border)] overflow-hidden transition-opacity duration-500 ${isAnimating ? "opacity-25" : "hover:border-[var(--t-border)] hover:shadow-sm"}`}>
                 <div className="flex items-stretch">
                   {/* Urgency accent bar */}
                   <div className={`w-1 flex-shrink-0 ${urgencyBar(raw)}`} />
@@ -570,9 +570,9 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
                     {/* Name + pills */}
                     <div className="flex-1 min-w-0">
                       <div
-                        className={`text-sm font-medium leading-snug ${isAnimating ? "line-through text-[#8A9170]" : "text-[#3A4A28] cursor-pointer hover:text-[#4A5C35]"} transition-colors`}
+                        className={`text-sm font-medium leading-snug ${isAnimating ? "line-through text-[var(--t-text-muted)]" : "text-[var(--t-text-dark)] cursor-pointer hover:text-[var(--t-primary)]"} transition-colors`}
                         onClick={() => !isAnimating && setSelectedTask(task)}>
-                        {task.name}{task.notes && <span className="text-[10px] text-[#8A9170] ml-1">·</span>}
+                        {task.name}{task.notes && <span className="text-[10px] text-[var(--t-text-muted)] ml-1">·</span>}
                       </div>
                       {(task.categories || []).length > 0 && (
                         <div className={`flex flex-wrap gap-1 mt-1.5 ${isAnimating ? "opacity-40" : ""}`}>
@@ -581,7 +581,7 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
                       )}
                     </div>
                     {/* Date badge */}
-                    <span className={`text-xs px-2.5 py-1 rounded-lg font-medium flex-shrink-0 ${isAnimating ? "line-through text-[#8A9170] bg-[#E9ECCF]" : getUrgencyStyle(raw)}`}>
+                    <span className={`text-xs px-2.5 py-1 rounded-lg font-medium flex-shrink-0 ${isAnimating ? "line-through text-[var(--t-text-muted)] bg-[var(--t-bg-input)]" : getUrgencyStyle(raw)}`}>
                       {dateMode === "daysLeft"
                         ? (raw < 0 ? `${Math.abs(Math.round(raw * 10) / 10)}d ago` : unit === "min" ? `${value}m` : `${value}d`)
                         : new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -590,7 +590,7 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
                     <input type="checkbox" checked={isAnimating || task.done}
                       onChange={() => !isAnimating && handleCheckDone(task.id)}
                       disabled={isAnimating}
-                      className="w-4 h-4 accent-[#4A5C35] cursor-pointer disabled:cursor-default flex-shrink-0" />
+                      className="w-4 h-4 accent-[var(--t-primary)] cursor-pointer disabled:cursor-default flex-shrink-0" />
                   </div>
                 </div>
               </div>
@@ -601,14 +601,14 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
         {/* ── Completed section ── */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
-            <button className="flex items-center gap-1.5 text-xs text-[#8A9170] hover:text-[#4A5C35] transition-colors font-medium"
+            <button className="flex items-center gap-1.5 text-xs text-[var(--t-text-muted)] hover:text-[var(--t-primary)] transition-colors font-medium"
               onClick={() => setShowCompleted(s => !s)}>
               <span className="text-[10px]">{showCompleted ? "▾" : "▸"}</span>
               Completed · {completedTasks.length}
             </button>
             {completedTasks.length > 0 && (
               <button onClick={() => setShowClearConfirm(true)}
-                className="text-[11px] text-[#8A9170] hover:text-red-400 transition-colors">
+                className="text-[11px] text-[var(--t-text-muted)] hover:text-red-400 transition-colors">
                 Clear all
               </button>
             )}
@@ -617,21 +617,21 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
           {showCompleted && (
             <div className="flex flex-col gap-2">
               {completedTasks.map(task => (
-                <div key={task.id} className="bg-[#F4F5E8]/60 rounded-xl border border-[#C3C7A6] overflow-hidden opacity-55 hover:opacity-75 transition-opacity">
+                <div key={task.id} className="bg-[var(--t-bg-card)]/60 rounded-xl border border-[var(--t-border)] overflow-hidden opacity-55 hover:opacity-75 transition-opacity">
                   <div className="flex items-center gap-4 px-5 py-3">
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm text-[#8A9170] line-through">{task.name}</span>
+                      <span className="text-sm text-[var(--t-text-muted)] line-through">{task.name}</span>
                       {(task.categories || []).length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {task.categories.map(c => <CategoryPill key={c} cat={c} categories={categories} />)}
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-[#8A9170] flex-shrink-0">
+                    <span className="text-xs text-[var(--t-text-muted)] flex-shrink-0">
                       {new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                     <input type="checkbox" checked={task.done} onChange={() => updateTask(task.id, { done: !task.done })}
-                      className="w-4 h-4 accent-[#4A5C35] cursor-pointer flex-shrink-0" />
+                      className="w-4 h-4 accent-[var(--t-primary)] cursor-pointer flex-shrink-0" />
                   </div>
                 </div>
               ))}
@@ -643,12 +643,12 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
       {/* ── Clear confirm modal ── */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowClearConfirm(false)}>
-          <div className="bg-[#F4F5E8] border border-[#C3C7A6] rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
-            <h3 style={lora} className="text-xl text-[#3A4A28] mb-2">Clear all completed tasks?</h3>
-            <p className="text-sm text-[#8A9170] mb-6">This will permanently delete all {completedTasks.length} completed task{completedTasks.length !== 1 ? "s" : ""}.</p>
+          <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+            <h3 style={lora} className="text-xl text-[var(--t-text-dark)] mb-2">Clear all completed tasks?</h3>
+            <p className="text-sm text-[var(--t-text-muted)] mb-6">This will permanently delete all {completedTasks.length} completed task{completedTasks.length !== 1 ? "s" : ""}.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowClearConfirm(false)}
-                className="flex-1 text-sm text-[#6B7255] border border-[#C3C7A6] bg-[#E9ECCF] py-2 rounded-xl hover:bg-[#DDE0C0] transition-colors">
+                className="flex-1 text-sm text-[var(--t-text-med)] border border-[var(--t-border)] bg-[var(--t-bg-input)] py-2 rounded-xl hover:bg-[var(--t-bg-accent)] transition-colors">
                 Cancel
               </button>
               <button onClick={async () => { await deleteAllCompleted(); setShowClearConfirm(false); setShowCompleted(false); }}
