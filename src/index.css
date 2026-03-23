@@ -6,11 +6,11 @@ body { font-family: 'Nunito', system-ui, sans-serif; }
   --t-primary: #4A5C35;
   --t-primary-hover: #3D4D2C;
   --t-on-primary: #EEF1DE;
-  --t-bg-page: #F7F8EE;
-  --t-bg-card: #F4F5E8;
-  --t-bg-input: #E9ECCF;
-  --t-bg-accent: #DDE0C0;
-  --t-border: #C3C7A6;
+  --t-bg-page: #FAFBF6;
+  --t-bg-card: #F4F5EC;
+  --t-bg-input: #E5E9CA;
+  --t-bg-accent: #D6DAB2;
+  --t-border: #C0C5A0;
   --t-text-dark: #3A4A28;
   --t-text-med: #6B7255;
   --t-text-muted: #8A9170;
