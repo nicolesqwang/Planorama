@@ -387,6 +387,8 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
   const [selectedDays, setSelectedDays] = useState(7);
   const [useCustom, setUseCustom] = useState(false);
   const [customDays, setCustomDays] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const durationDays = isDailyTask ? (useCustom ? (parseInt(customDays) || 0) : selectedDays) : 0;
   const canSubmit = isDailyTask
@@ -408,13 +410,22 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   })() : "";
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (!canSubmit || saving) return;
     if (isDailyTask) {
-      onAddDailyTask({ name, category: selCats[0] || null, durationDays });
+      setSaving(true);
+      setSubmitError(null);
+      try {
+        await onAddDailyTask({ name, category: selCats[0] || null, durationDays });
+        onClose();
+      } catch (err) {
+        setSaving(false);
+        setSubmitError(err.message || "Failed to create daily task. Please try again.");
+      }
     } else {
       onAdd({ name, dueDate, dueTime, categories: selCats, types: selTypes, done: false, notes });
+      onClose();
     }
-    onClose();
   }
 
   return (
@@ -426,6 +437,7 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
           <div>
             <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Task Name</label>
             <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Math HW 9"
+              onKeyDown={e => e.key === "Enter" && handleSubmit()}
               className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
 
@@ -523,9 +535,12 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
               className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
-        <button onClick={handleSubmit} disabled={!canSubmit}
-          className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
-          {isDailyTask ? "Add Daily Task" : (prefill ? "Add Duplicate" : "Add Task")}
+        {submitError && (
+          <p className="mt-3 text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{submitError}</p>
+        )}
+        <button onClick={handleSubmit} disabled={!canSubmit || saving}
+          className="mt-3 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
+          {saving ? "Creating..." : isDailyTask ? "Add Daily Task" : (prefill ? "Add Duplicate" : "Add Task")}
         </button>
       </div>
     </div>

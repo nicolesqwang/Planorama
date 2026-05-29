@@ -27,6 +27,7 @@ function AddDailyModal({ onClose, onAdd, categories }) {
   const [useCustom, setUseCustom] = useState(false);
   const [customDays, setCustomDays] = useState("");
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const durationDays = useCustom ? (parseInt(customDays) || 0) : selectedDays;
   const canSubmit = name.trim() && durationDays >= 1;
@@ -40,8 +41,14 @@ function AddDailyModal({ onClose, onAdd, categories }) {
   async function handleSubmit() {
     if (!canSubmit || saving) return;
     setSaving(true);
-    await onAdd({ name: name.trim(), category: selCat || null, durationDays });
-    onClose();
+    setSubmitError(null);
+    try {
+      await onAdd({ name: name.trim(), category: selCat || null, durationDays });
+      onClose();
+    } catch (err) {
+      setSaving(false);
+      setSubmitError(err.message || "Something went wrong. Please try again.");
+    }
   }
 
   return (
@@ -53,6 +60,7 @@ function AddDailyModal({ onClose, onAdd, categories }) {
           <div>
             <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Task Name</label>
             <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Morning workout"
+              onKeyDown={e => e.key === "Enter" && handleSubmit()}
               className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
           <div>
@@ -101,8 +109,11 @@ function AddDailyModal({ onClose, onAdd, categories }) {
             </div>
           </div>
         </div>
+        {submitError && (
+          <p className="mt-3 text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{submitError}</p>
+        )}
         <button onClick={handleSubmit} disabled={!canSubmit || saving}
-          className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
+          className="mt-3 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
           {saving ? "Creating..." : "Add Daily Task"}
         </button>
       </div>

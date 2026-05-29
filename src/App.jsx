@@ -364,7 +364,7 @@ export default function App() {
     const { data: dt, error } = await supabase.from("daily_tasks").insert({
       user_id: uid, name, category: category || null, start_date: startDate, end_date: endDate,
     }).select().single();
-    if (error || !dt) return;
+    if (error || !dt) throw new Error(error?.message || "Failed to create daily task. Make sure you've run the database migration in Supabase.");
     setDailyTasks(p => [...p, dt]);
 
     const rows = [];
