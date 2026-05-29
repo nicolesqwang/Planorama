@@ -351,9 +351,16 @@ function TaskModal({ task, onClose, onSave, onDuplicate, onDelete, categories, t
               className="w-full h-24 text-sm text-[var(--t-text-dark)] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
-        <div className="flex gap-2 mt-5">
-          <button onClick={()=>{onDelete(task.id);onClose();}}
-            className="bg-[var(--t-bg-input)] hover:bg-red-50 border border-[var(--t-border)] hover:border-red-200 text-red-400 hover:text-red-500 text-sm font-semibold py-2 px-3 rounded-xl transition-colors">Delete</button>
+        {task.daily_task_id && (
+          <p className="text-[11px] text-[var(--t-text-muted)] mt-4 px-1">
+            Part of a daily series — to delete or change duration, go to <strong>Daily Tasks</strong>.
+          </p>
+        )}
+        <div className="flex gap-2 mt-3">
+          {!task.daily_task_id && (
+            <button onClick={()=>{onDelete(task.id);onClose();}}
+              className="bg-[var(--t-bg-input)] hover:bg-red-50 border border-[var(--t-border)] hover:border-red-200 text-red-400 hover:text-red-500 text-sm font-semibold py-2 px-3 rounded-xl transition-colors">Delete</button>
+          )}
           <button onClick={()=>{onDuplicate(task);onClose();}}
             className="flex-1 bg-[var(--t-bg-input)] hover:bg-[var(--t-bg-accent)] border border-[var(--t-border)] text-[var(--t-text-dark)] text-sm font-semibold py-2 rounded-xl transition-colors">Duplicate</button>
           <button onClick={()=>{onSave(task.id,{name,dueDate,dueTime,categories:selCats,types:selTypes,notes});onClose();}}

@@ -414,6 +414,77 @@ export default function App() {
     if (data) setDailyCompletions(p => [...p, data]);
   }
 
+  async function updateDailyTask(dailyTaskId, { name, category, endDate, notes }) {
+    const uid = session.user.id;
+    const current = dailyTasks.find(dt => dt.id === dailyTaskId);
+    if (!current) return;
+
+    // Update the daily_tasks record
+    const { data: updated, error } = await supabase.from("daily_tasks")
+      .update({ name, category: category || null, end_date: endDate })
+      .eq("id", dailyTaskId).select().single();
+    if (error || !updated) throw new Error(error?.message || "Failed to update daily task");
+    setDailyTasks(p => p.map(dt => dt.id === dailyTaskId ? updated : dt));
+
+    // Update name/category/notes on all existing instances
+    await supabase.from("tasks")
+      .update({ name, categories: category ? [category] : [], notes: notes || "" })
+      .eq("daily_task_id", dailyTaskId);
+    setTasksState(p => p.map(t =>
+      t.daily_task_id === dailyTaskId
+        ? { ...t, name, categories: category ? [category] : [], notes: notes || "" }
+        : t
+    ));
+
+    // If shortened: delete instances and completions beyond the new end date
+    if (endDate < current.end_date) {
+      const toDelete = tasks
+        .filter(t => t.daily_task_id === dailyTaskId && t.due_date > endDate)
+        .map(t => t.id);
+      if (toDelete.length > 0) {
+        await supabase.from("tasks").delete().in("id", toDelete);
+        setTasksState(p => p.filter(t => !toDelete.includes(t.id)));
+      }
+      await supabase.from("daily_task_completions")
+        .delete().eq("daily_task_id", dailyTaskId).gt("completed_date", endDate);
+      setDailyCompletions(p => p.filter(c =>
+        !(c.daily_task_id === dailyTaskId && c.completed_date > endDate)
+      ));
+    }
+
+    // If extended: create new instances from (old end + 1) to new end
+    if (endDate > current.end_date) {
+      const rows = [];
+      const start = new Date(current.end_date + "T00:00:00");
+      start.setDate(start.getDate() + 1);
+      const end = new Date(endDate + "T00:00:00");
+      let cur = new Date(start);
+      while (cur <= end) {
+        rows.push({
+          user_id: uid, name, due_date: cur.toISOString().split("T")[0],
+          due_time: "23:59", categories: category ? [category] : [],
+          types: [], done: false, notes: notes || "", daily_task_id: dailyTaskId,
+        });
+        cur.setDate(cur.getDate() + 1);
+      }
+      const { data: inserted } = await supabase.from("tasks").insert(rows).select();
+      if (inserted) setTasksState(p => [...p, ...inserted]);
+    }
+  }
+
+  async function deleteDailyTask(dailyTaskId) {
+    // Delete task instances first (FK is set-null on cascade, so do it manually)
+    const { error: taskErr } = await supabase.from("tasks").delete().eq("daily_task_id", dailyTaskId);
+    if (taskErr) throw new Error(taskErr.message);
+    setTasksState(p => p.filter(t => t.daily_task_id !== dailyTaskId));
+
+    // Delete the daily_tasks record (cascades to daily_task_completions)
+    const { error: dtErr } = await supabase.from("daily_tasks").delete().eq("id", dailyTaskId);
+    if (dtErr) throw new Error(dtErr.message);
+    setDailyTasks(p => p.filter(dt => dt.id !== dailyTaskId));
+    setDailyCompletions(p => p.filter(c => c.daily_task_id !== dailyTaskId));
+  }
+
   async function updateCategory(id, updates) {
     const { data, error } = await supabase.from("categories")
       .update({ name: updates.name, bg: updates.bg, text_color: updates.text, border: updates.border })
@@ -696,7 +767,9 @@ export default function App() {
           {page === "daily-tasks" && (
             <DailyTasks
               dailyTasks={dailyTasks} dailyTaskCompletions={dailyTaskCompletions}
-              categories={normCats} onAddDailyTask={addDailyTask} onToggleCompletion={toggleDailyCompletion} />
+              dailyTaskInstances={tasks.filter(t => t.daily_task_id)}
+              categories={normCats} onAddDailyTask={addDailyTask} onToggleCompletion={toggleDailyCompletion}
+              onUpdateDailyTask={updateDailyTask} onDeleteDailyTask={deleteDailyTask} />
           )}
           {page === "settings" && (
             <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut}

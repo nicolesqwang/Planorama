@@ -20,6 +20,149 @@ function CategoryPill({ cat, categories }) {
   );
 }
 
+// ── Edit Modal ─────────────────────────────────────────────────
+function DailyTaskEditModal({ dt, instances, completedCount, categories, onSave, onDelete, onClose }) {
+  const [name, setName]       = useState(dt.name);
+  const [selCat, setSelCat]   = useState(dt.category || "");
+  const [endDate, setEndDate] = useState(dt.end_date);
+  const [notes, setNotes]     = useState(() => instances[0]?.notes || "");
+  const [saving, setSaving]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [error, setError]     = useState(null);
+
+  const totalDays = Math.round(
+    (new Date(dt.end_date + "T00:00:00") - new Date(dt.start_date + "T00:00:00")) / 86400000
+  ) + 1;
+
+  const canSave = name.trim() && endDate >= dt.start_date;
+
+  const endDateChanged = endDate !== dt.end_date;
+  const endDateHint = endDateChanged
+    ? endDate < dt.end_date
+      ? "Instances after the new end date will be removed."
+      : "New daily instances will be created up to the new end date."
+    : null;
+
+  async function handleSave() {
+    if (!canSave || saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(dt.id, { name: name.trim(), category: selCat || null, endDate, notes });
+      onClose();
+    } catch (err) {
+      setSaving(false);
+      setError(err.message || "Failed to save. Please try again.");
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete(dt.id);
+      onClose();
+    } catch (err) {
+      setDeleting(false);
+      setError(err.message || "Failed to delete. Please try again.");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
+        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-0.5">Edit Daily Task</h2>
+        <p className="text-[11px] text-[var(--t-text-muted)] mb-5">
+          {completedCount} / {totalDays} days completed · started {new Date(dt.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+        </p>
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Task Name</label>
+            <input value={name} onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSave()}
+              className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">
+              Category <span className="normal-case font-normal">(optional)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {categories.length === 0 && <p className="text-xs text-[var(--t-text-muted)]">No categories yet.</p>}
+              {categories.map(c => (
+                <button key={c.name} onClick={() => setSelCat(s => s === c.name ? "" : c.name)}
+                  className="text-xs font-medium px-3 py-1 rounded-full border transition-all"
+                  style={selCat === c.name
+                    ? { background: c.bg, color: c.text, borderColor: c.border }
+                    : { background: "var(--t-bg-input)", color: "var(--t-text-med)", borderColor: "var(--t-border)" }}>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">End Date</label>
+            <input type="date" value={endDate} min={dt.start_date} onChange={e => setEndDate(e.target.value)}
+              className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
+            {endDateHint && (
+              <p className="text-[11px] text-[var(--t-text-muted)] mt-1">{endDateHint}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">
+              Notes <span className="normal-case font-normal">(applied to all instances)</span>
+            </label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add notes..."
+              className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
+          </div>
+        </div>
+
+        {error && (
+          <p className="mt-3 text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>
+        )}
+
+        {!confirmDelete ? (
+          <div className="flex gap-2 mt-5">
+            <button onClick={() => setConfirmDelete(true)}
+              className="bg-[var(--t-bg-input)] hover:bg-red-50 border border-[var(--t-border)] hover:border-red-200 text-red-400 hover:text-red-500 text-sm font-semibold py-2 px-3 rounded-xl transition-colors">
+              Delete Series
+            </button>
+            <button onClick={onClose}
+              className="flex-1 bg-[var(--t-bg-input)] hover:bg-[var(--t-bg-accent)] border border-[var(--t-border)] text-[var(--t-text-dark)] text-sm font-semibold py-2 rounded-xl transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleSave} disabled={!canSave || saving}
+              className="flex-grow bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2 rounded-xl transition-colors">
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-5 bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4">
+            <p className="text-sm text-[var(--t-text-dark)] font-medium mb-1">Delete this entire series?</p>
+            <p className="text-xs text-[var(--t-text-muted)] mb-3">This removes the daily task and all its instances from your task list. Cannot be undone.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmDelete(false)}
+                className="flex-1 text-sm border border-[var(--t-border)] text-[var(--t-text-med)] py-2 rounded-xl hover:bg-[var(--t-bg-accent)] transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleDelete} disabled={deleting}
+                className="flex-1 text-sm text-white bg-red-400 hover:bg-red-500 disabled:opacity-40 py-2 rounded-xl transition-colors">
+                {deleting ? "Deleting..." : "Yes, delete"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Add Modal ──────────────────────────────────────────────────
 function AddDailyModal({ onClose, onAdd, categories }) {
   const [name, setName] = useState("");
   const [selCat, setSelCat] = useState("");
@@ -121,16 +264,22 @@ function AddDailyModal({ onClose, onAdd, categories }) {
   );
 }
 
-export default function DailyTasks({ dailyTasks, dailyTaskCompletions, categories, onAddDailyTask, onToggleCompletion }) {
-  const [showAdd, setShowAdd] = useState(false);
+// ── Main page ──────────────────────────────────────────────────
+export default function DailyTasks({
+  dailyTasks, dailyTaskCompletions, dailyTaskInstances,
+  categories, onAddDailyTask, onToggleCompletion,
+  onUpdateDailyTask, onDeleteDailyTask,
+}) {
+  const [showAdd, setShowAdd]     = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [selectedDt, setSelectedDt]    = useState(null);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const completedTodaySet = new Set(
     dailyTaskCompletions.filter(c => c.completed_date === todayStr).map(c => c.daily_task_id)
   );
 
-  const active = dailyTasks.filter(dt => dt.end_date >= todayStr);
+  const active   = dailyTasks.filter(dt => dt.end_date >= todayStr);
   const archived = dailyTasks.filter(dt => dt.end_date < todayStr);
 
   function completedCount(dtId) {
@@ -139,7 +288,7 @@ export default function DailyTasks({ dailyTasks, dailyTaskCompletions, categorie
 
   function totalDays(dt) {
     const start = new Date(dt.start_date + "T00:00:00");
-    const end = new Date(dt.end_date + "T00:00:00");
+    const end   = new Date(dt.end_date   + "T00:00:00");
     return Math.round((end - start) / 86400000) + 1;
   }
 
@@ -179,14 +328,16 @@ export default function DailyTasks({ dailyTasks, dailyTaskCompletions, categorie
             </div>
           )}
           {active.map(dt => {
-            const total = totalDays(dt);
-            const done = completedCount(dt.id);
-            const pct = total > 0 ? Math.min(done / total, 1) : 0;
+            const total       = totalDays(dt);
+            const done        = completedCount(dt.id);
+            const pct         = total > 0 ? Math.min(done / total, 1) : 0;
             const checkedToday = completedTodaySet.has(dt.id);
-            const dayNum = currentDay(dt);
+            const dayNum      = currentDay(dt);
 
             return (
-              <div key={dt.id} className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl overflow-hidden hover:shadow-sm transition-shadow">
+              <div key={dt.id}
+                className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl overflow-hidden hover:shadow-sm transition-shadow cursor-pointer"
+                onClick={() => setSelectedDt(dt)}>
                 <div className="px-5 py-4 flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
@@ -205,7 +356,9 @@ export default function DailyTasks({ dailyTasks, dailyTaskCompletions, categorie
                       <span>until {fmtDate(dt.end_date)}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5">
+                  {/* Checkbox — stopPropagation so clicking it doesn't open the edit modal */}
+                  <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5"
+                    onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={checkedToday}
                       onChange={() => onToggleCompletion(dt.id)}
                       className="w-5 h-5 accent-[var(--t-primary)] cursor-pointer"
@@ -230,10 +383,12 @@ export default function DailyTasks({ dailyTasks, dailyTaskCompletions, categorie
               <div className="flex flex-col gap-2">
                 {archived.map(dt => {
                   const total = totalDays(dt);
-                  const done = completedCount(dt.id);
-                  const pct = total > 0 ? Math.min(done / total, 1) : 0;
+                  const done  = completedCount(dt.id);
+                  const pct   = total > 0 ? Math.min(done / total, 1) : 0;
                   return (
-                    <div key={dt.id} className="bg-[var(--t-bg-card)]/60 border border-[var(--t-border)] rounded-2xl overflow-hidden opacity-55">
+                    <div key={dt.id}
+                      className="bg-[var(--t-bg-card)]/60 border border-[var(--t-border)] rounded-2xl overflow-hidden opacity-55 hover:opacity-75 cursor-pointer transition-opacity"
+                      onClick={() => setSelectedDt(dt)}>
                       <div className="px-5 py-3">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-sm font-medium line-through text-[var(--t-text-muted)]">{dt.name}</span>
@@ -260,6 +415,18 @@ export default function DailyTasks({ dailyTasks, dailyTaskCompletions, categorie
           onClose={() => setShowAdd(false)}
           onAdd={onAddDailyTask}
           categories={categories}
+        />
+      )}
+
+      {selectedDt && (
+        <DailyTaskEditModal
+          dt={selectedDt}
+          instances={dailyTaskInstances.filter(t => t.daily_task_id === selectedDt.id)}
+          completedCount={completedCount(selectedDt.id)}
+          categories={categories}
+          onSave={onUpdateDailyTask}
+          onDelete={onDeleteDailyTask}
+          onClose={() => setSelectedDt(null)}
         />
       )}
     </div>
