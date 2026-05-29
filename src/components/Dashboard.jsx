@@ -76,7 +76,7 @@ function StatListModal({ title, items, categories, onClose, onSelectItem }) {
 }
 
 // ── Event / Task Detail Modal ───────────────────────────────────
-function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask, onSaveTask }) {
+function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask, onSaveTask, onDeleteTask }) {
   const [name, setName]         = useState(item.name);
   const [dueDate, setDueDate]   = useState(isTask ? (item.due_date || "") : (item.date || ""));
   const [dueTime, setDueTime]   = useState(item.due_time || item.time || "23:59");
@@ -177,11 +177,17 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
               className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
-        <button onClick={() => { if (isTask) onSaveTask(item.id, { name, dueDate, dueTime, categories: selCats, types: selTypes, notes }); onClose(); }}
-          disabled={!canSave}
-          className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
-          {isTask ? "Save Changes" : "Close"}
-        </button>
+        <div className="flex gap-2 mt-5">
+          {isTask && (
+            <button onClick={() => { onDeleteTask(item.id); onClose(); }}
+              className="bg-[var(--t-bg-input)] hover:bg-red-50 border border-[var(--t-border)] hover:border-red-200 text-red-400 hover:text-red-500 text-sm font-semibold py-2 px-3 rounded-xl transition-colors">Delete</button>
+          )}
+          <button onClick={() => { if (isTask) onSaveTask(item.id, { name, dueDate, dueTime, categories: selCats, types: selTypes, notes }); onClose(); }}
+            disabled={!canSave}
+            className="flex-1 bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
+            {isTask ? "Save Changes" : "Close"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -524,7 +530,7 @@ function ListView({ tasks, events, categories, onSelectItem }) {
 
 // ── Dashboard ───────────────────────────────────────────────────
 export default function Dashboard({
-  tasks, setTasks, addTask,
+  tasks, setTasks, addTask, deleteTask,
   events, addEvent,
   categories, taskTypes = [],
   eventTypes, addEventType, removeEventType,
@@ -620,12 +626,14 @@ export default function Dashboard({
         <EventModal item={statDetailItem}
           onClose={() => { setStatDetailItem(null); setStatModal(null); }} onBack={() => setStatDetailItem(null)}
           categories={categories} taskTypes={taskTypes} isTask={statDetailItem._type === "task"}
-          onSaveTask={(id, updates) => { setTasks(id, updates); setStatDetailItem(null); }} />
+          onSaveTask={(id, updates) => { setTasks(id, updates); setStatDetailItem(null); }}
+          onDeleteTask={(id) => { deleteTask(id); setStatDetailItem(null); setStatModal(null); }} />
       )}
       {selectedItem && (
         <EventModal item={selectedItem} onClose={() => setSelectedItem(null)}
           categories={categories} taskTypes={taskTypes} isTask={selectedItem._type === "task"}
-          onSaveTask={(id, updates) => { setTasks(id, updates); setSelectedItem(null); }} />
+          onSaveTask={(id, updates) => { setTasks(id, updates); setSelectedItem(null); }}
+          onDeleteTask={(id) => { deleteTask(id); setSelectedItem(null); }} />
       )}
       {showAddTask && <AddTaskModal onClose={() => setShowAddTask(false)} onAdd={addTask} categories={categories} taskTypes={taskTypes} />}
       {showAddEvent && <AddEventModal onClose={() => setShowAddEvent(false)} onAdd={addEvent}

@@ -279,7 +279,7 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
 }
 
 // ── Task Detail Modal ──────────────────────────────────────────
-function TaskModal({ task, onClose, onSave, onDuplicate, categories, taskTypes }) {
+function TaskModal({ task, onClose, onSave, onDuplicate, onDelete, categories, taskTypes }) {
   const [name, setName]         = useState(task.name);
   const [dueDate, setDueDate]   = useState(task.due_date);
   const [dueTime, setDueTime]   = useState(task.due_time);
@@ -352,6 +352,8 @@ function TaskModal({ task, onClose, onSave, onDuplicate, categories, taskTypes }
           </div>
         </div>
         <div className="flex gap-2 mt-5">
+          <button onClick={()=>{onDelete(task.id);onClose();}}
+            className="bg-[var(--t-bg-input)] hover:bg-red-50 border border-[var(--t-border)] hover:border-red-200 text-red-400 hover:text-red-500 text-sm font-semibold py-2 px-3 rounded-xl transition-colors">Delete</button>
           <button onClick={()=>{onDuplicate(task);onClose();}}
             className="flex-1 bg-[var(--t-bg-input)] hover:bg-[var(--t-bg-accent)] border border-[var(--t-border)] text-[var(--t-text-dark)] text-sm font-semibold py-2 rounded-xl transition-colors">Duplicate</button>
           <button onClick={()=>{onSave(task.id,{name,dueDate,dueTime,categories:selCats,types:selTypes,notes});onClose();}}
@@ -363,17 +365,57 @@ function TaskModal({ task, onClose, onSave, onDuplicate, categories, taskTypes }
   );
 }
 
+const DURATION_OPTIONS = [
+  { label: "3 days", days: 3 },
+  { label: "1 week", days: 7 },
+  { label: "2 weeks", days: 14 },
+  { label: "1 month", days: 30 },
+  { label: "3 months", days: 90 },
+  { label: "6 months", days: 180 },
+  { label: "1 year", days: 365 },
+];
+
 // ── Add Task Modal ─────────────────────────────────────────────
-function AddTaskModal({ onClose, onAdd, categories, taskTypes, prefill }) {
+function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, prefill }) {
   const [name, setName]         = useState(prefill?.name || "");
   const [dueDate, setDueDate]   = useState("");
   const [dueTime, setDueTime]   = useState(prefill?.due_time || "23:59");
   const [selCats, setSelCats]   = useState(prefill?.categories || []);
   const [selTypes, setSelTypes] = useState(prefill?.types || []);
   const [notes, setNotes]       = useState(prefill?.notes || "");
-  const canSubmit = name.trim() && dueDate && selCats.length > 0;
-  function toggleCat(c)  { setSelCats(s  => s.includes(c) ? s.filter(x=>x!==c) : [...s,c]); }
+  const [isDailyTask, setIsDailyTask] = useState(false);
+  const [selectedDays, setSelectedDays] = useState(7);
+  const [useCustom, setUseCustom] = useState(false);
+  const [customDays, setCustomDays] = useState("");
+
+  const durationDays = isDailyTask ? (useCustom ? (parseInt(customDays) || 0) : selectedDays) : 0;
+  const canSubmit = isDailyTask
+    ? (name.trim() && durationDays >= 1)
+    : (name.trim() && dueDate && selCats.length > 0);
+
+  function toggleCat(c) {
+    if (isDailyTask) {
+      setSelCats(s => s.includes(c) ? [] : [c]);
+    } else {
+      setSelCats(s => s.includes(c) ? s.filter(x => x !== c) : [...s, c]);
+    }
+  }
   function toggleType(t) { setSelTypes(s => s.includes(t) ? s.filter(x=>x!==t) : [...s,t]); }
+
+  const endPreview = isDailyTask && durationDays >= 1 ? (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + durationDays - 1);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  })() : "";
+
+  function handleSubmit() {
+    if (isDailyTask) {
+      onAddDailyTask({ name, category: selCats[0] || null, durationDays });
+    } else {
+      onAdd({ name, dueDate, dueTime, categories: selCats, types: selTypes, done: false, notes });
+    }
+    onClose();
+  }
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
@@ -386,20 +428,66 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes, prefill }) {
             <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Math HW 9"
               className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Date</label>
-              <input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}
-                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
+
+          {!prefill && (
+            <button onClick={() => { setIsDailyTask(s => !s); setUseCustom(false); setCustomDays(""); }}
+              className={`flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border transition-all w-fit ${isDailyTask ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13.5 4.5A6 6 0 0 0 2.5 8"/><path d="M2.5 11.5A6 6 0 0 0 13.5 8"/>
+                <polyline points="11,2.5 13.5,4.5 11,6.5"/><polyline points="5,9.5 2.5,11.5 5,13.5"/>
+              </svg>
+              Make this a Daily Task
+            </button>
+          )}
+
+          {isDailyTask && (
+            <div className="bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4 flex flex-col gap-3">
+              <p className="text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">Repeat for how long?</p>
+              <div className="flex flex-wrap gap-2">
+                {DURATION_OPTIONS.map(opt => (
+                  <button key={opt.days} onClick={() => { setSelectedDays(opt.days); setUseCustom(false); }}
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!useCustom && selectedDays === opt.days ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-card)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
+                    {opt.label}
+                  </button>
+                ))}
+                <button onClick={() => setUseCustom(true)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-all ${useCustom ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-card)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
+                  Custom
+                </button>
+              </div>
+              {useCustom && (
+                <div className="flex items-center gap-2">
+                  <input type="number" min="1" max="3650" value={customDays} onChange={e => setCustomDays(e.target.value)}
+                    placeholder="Days"
+                    className="w-32 text-sm bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
+                  <span className="text-sm text-[var(--t-text-muted)]">days</span>
+                </div>
+              )}
+              {endPreview && (
+                <p className="text-[11px] text-[var(--t-text-muted)]">Starts today · ends {endPreview}</p>
+              )}
             </div>
-            <div className="w-36">
-              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Time</label>
-              <input type="time" value={dueTime} onChange={e=>setDueTime(e.target.value)}
-                className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
+          )}
+
+          {!isDailyTask && (
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Date</label>
+                <input type="date" value={dueDate} onChange={e=>setDueDate(e.target.value)}
+                  className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
+              </div>
+              <div className="w-36">
+                <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Due Time</label>
+                <input type="time" value={dueTime} onChange={e=>setDueTime(e.target.value)}
+                  className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
+              </div>
             </div>
-          </div>
+          )}
+
           <div>
-            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Category <span className="text-[var(--t-primary)]">*</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">
+              Category {isDailyTask ? <span className="normal-case font-normal">(optional)</span> : <span className="text-[var(--t-primary)]">*</span>}
+            </label>
             <div className="flex flex-wrap gap-2">
               {categories.length === 0 && <p className="text-xs text-[var(--t-text-muted)]">No categories yet — add some in Manage first!</p>}
               {categories.map(c => (
@@ -410,29 +498,34 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes, prefill }) {
                 </button>
               ))}
             </div>
-            {categories.length > 0 && selCats.length === 0 && <p className="text-xs text-[var(--t-primary)] mt-1">Please select at least one category</p>}
+            {!isDailyTask && categories.length > 0 && selCats.length === 0 && (
+              <p className="text-xs text-[var(--t-primary)] mt-1">Please select at least one category</p>
+            )}
           </div>
-          <div>
-            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
-            <div className="flex flex-wrap gap-2">
-              {taskTypes.map(t => (
-                <button key={t.id} onClick={()=>toggleType(t.name)}
-                  className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)]"}`}>
-                  {t.name}
-                </button>
-              ))}
+
+          {!isDailyTask && (
+            <div>
+              <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
+              <div className="flex flex-wrap gap-2">
+                {taskTypes.map(t => (
+                  <button key={t.id} onClick={()=>toggleType(t.name)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-all ${selTypes.includes(t.name) ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)]"}`}>
+                    {t.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
           <div>
             <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Notes <span className="normal-case font-normal">(optional)</span></label>
             <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Any extra details..."
               className="w-full h-20 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-3 resize-none outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
         </div>
-        <button onClick={()=>{onAdd({name,dueDate,dueTime,categories:selCats,types:selTypes,done:false,notes});onClose();}}
-          disabled={!canSubmit}
+        <button onClick={handleSubmit} disabled={!canSubmit}
           className="mt-5 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
-          {prefill ? "Add Duplicate" : "Add Task"}
+          {isDailyTask ? "Add Daily Task" : (prefill ? "Add Duplicate" : "Add Task")}
         </button>
       </div>
     </div>
@@ -440,7 +533,7 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes, prefill }) {
 }
 
 // ── Main TaskList ──────────────────────────────────────────────
-export default function TaskList({ tasks, updateTask, addTask, categories, addCategory, removeCategory, updateCategory, taskTypes, addTaskType, removeTaskType, onExcelImport, deleteAllCompleted }) {
+export default function TaskList({ tasks, updateTask, addTask, deleteTask, categories, addCategory, removeCategory, updateCategory, taskTypes, addTaskType, removeTaskType, onExcelImport, deleteAllCompleted, onAddDailyTask, completeDailyInstance }) {
   const [dateMode, setDateMode]             = useState("daysLeft");
   const [sortByCategory, setSortByCategory] = useState(false);
   const [showCompleted, setShowCompleted]   = useState(false);
@@ -477,9 +570,13 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
 
   function handleCheckDone(taskId) {
     if (animatingOut.includes(taskId)) return;
+    const task = tasks.find(t => t.id === taskId);
     setAnimatingOut(prev => [...prev, taskId]);
     setTimeout(() => {
       updateTask(taskId, { done: true });
+      if (task?.daily_task_id && completeDailyInstance) {
+        completeDailyInstance(task.daily_task_id, task.due_date);
+      }
       setAnimatingOut(prev => prev.filter(id => id !== taskId));
       undoStack.current = [...undoStack.current, taskId];
     }, 700);
@@ -572,7 +669,12 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
                       <div
                         className={`text-sm font-medium leading-snug ${isAnimating ? "line-through text-[var(--t-text-muted)]" : "text-[var(--t-text-dark)] cursor-pointer hover:text-[var(--t-primary)]"} transition-colors`}
                         onClick={() => !isAnimating && setSelectedTask(task)}>
-                        {task.name}{task.notes && <span className="text-[10px] text-[var(--t-text-muted)] ml-1">·</span>}
+                        {task.name}
+                        {task.daily_task_id && (
+                          <span className="inline text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 align-middle"
+                            style={{ background: "var(--t-bg-accent)", color: "var(--t-primary)" }}>Daily</span>
+                        )}
+                        {task.notes && <span className="text-[10px] text-[var(--t-text-muted)] ml-1">·</span>}
                       </div>
                       {(task.categories || []).length > 0 && (
                         <div className={`flex flex-wrap gap-1 mt-1.5 ${isAnimating ? "opacity-40" : ""}`}>
@@ -660,8 +762,8 @@ export default function TaskList({ tasks, updateTask, addTask, categories, addCa
         </div>
       )}
 
-      {selectedTask && <TaskModal task={selectedTask} onClose={() => setSelectedTask(null)} onSave={updateTask} onDuplicate={handleDuplicate} categories={categories} taskTypes={taskTypes} />}
-      {showAddTask && <AddTaskModal onClose={() => { setShowAddTask(false); setDuplicatePrefill(null); }} onAdd={addTask} categories={categories} taskTypes={taskTypes} prefill={duplicatePrefill} />}
+      {selectedTask && <TaskModal task={selectedTask} onClose={() => setSelectedTask(null)} onSave={updateTask} onDuplicate={handleDuplicate} onDelete={deleteTask} categories={categories} taskTypes={taskTypes} />}
+      {showAddTask && <AddTaskModal onClose={() => { setShowAddTask(false); setDuplicatePrefill(null); }} onAdd={addTask} onAddDailyTask={onAddDailyTask} categories={categories} taskTypes={taskTypes} prefill={duplicatePrefill} />}
       {showManage && <ManageModal categories={categories} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory} taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType} onClose={() => setShowManage(false)} />}
     </div>
   );

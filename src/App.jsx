@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import Landing from "./components/Landing";
 import Dashboard from "./components/Dashboard";
 import TaskList from "./components/TaskList";
+import DailyTasks from "./components/DailyTasks";
 import Pomodoro from "./components/Pomodoro";
 import Settings from "./components/Settings";
 import { DEFAULT_THEME_KEY, applyTheme, generateThemeFromColor } from "./theme";
@@ -212,6 +213,8 @@ export default function App() {
   const [pomodoroColor, setPomodoroColor] = useState(null);
   const [themeKey, setThemeKey] = useState(DEFAULT_THEME_KEY);
   const [customThemeHex, setCustomThemeHex] = useState("#4A5C35");
+  const [dailyTasks, setDailyTasks] = useState([]);
+  const [dailyTaskCompletions, setDailyCompletions] = useState([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -231,7 +234,7 @@ export default function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setSession(session);
-      if (!session) { setTasksState([]); setEventsState([]); setCatsState([]); setTTState([]); setETState([]); }
+      if (!session) { setTasksState([]); setEventsState([]); setCatsState([]); setTTState([]); setETState([]); setDailyTasks([]); setDailyCompletions([]); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -252,16 +255,20 @@ export default function App() {
 
   async function loadAll() {
   const uid = session.user.id;
-  const [t, e, c, tt, et] = await Promise.all([
+  const [t, e, c, tt, et, dt, dc] = await Promise.all([
     supabase.from("tasks").select("*").eq("user_id", uid).order("due_date"),
     supabase.from("events").select("*").eq("user_id", uid).order("date"),
     supabase.from("categories").select("*").eq("user_id", uid),
     supabase.from("task_types").select("*").eq("user_id", uid),
     supabase.from("event_types").select("*").eq("user_id", uid),
+    supabase.from("daily_tasks").select("*").eq("user_id", uid).order("created_at"),
+    supabase.from("daily_task_completions").select("*").eq("user_id", uid),
   ]);
   setTasksState(t.data || []);
   setEventsState(e.data || []);
   setCatsState(c.data || []);
+  setDailyTasks(dt.data || []);
+  setDailyCompletions(dc.data || []);
 
   if ((tt.data || []).length === 0) {
     const rows = DEFAULT_TASK_TYPES.map(name => ({ user_id: uid, name }));
@@ -334,11 +341,77 @@ export default function App() {
     setCatsState(p => p.filter(c => c.id !== id));
   }
 
+  async function deleteTask(id) {
+    await supabase.from("tasks").delete().eq("id", id);
+    setTasksState(p => p.filter(t => t.id !== id));
+  }
+
   async function deleteAllCompleted() {
     const ids = tasks.filter(t => t.done).map(t => t.id);
     if (!ids.length) return;
     await supabase.from("tasks").delete().in("id", ids);
     setTasksState(p => p.filter(t => !t.done));
+  }
+
+  async function addDailyTask({ name, category, durationDays }) {
+    const uid = session.user.id;
+    const today = new Date();
+    const startDate = today.toISOString().split("T")[0];
+    const endDateObj = new Date(today);
+    endDateObj.setDate(today.getDate() + durationDays - 1);
+    const endDate = endDateObj.toISOString().split("T")[0];
+
+    const { data: dt, error } = await supabase.from("daily_tasks").insert({
+      user_id: uid, name, category: category || null, start_date: startDate, end_date: endDate,
+    }).select().single();
+    if (error || !dt) return;
+    setDailyTasks(p => [...p, dt]);
+
+    const rows = [];
+    for (let i = 0; i < durationDays; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      rows.push({
+        user_id: uid, name, due_date: d.toISOString().split("T")[0],
+        due_time: "23:59", categories: category ? [category] : [],
+        types: [], done: false, notes: "", daily_task_id: dt.id,
+      });
+    }
+    const { data: inserted } = await supabase.from("tasks").insert(rows).select();
+    if (inserted) setTasksState(p => [...p, ...inserted]);
+  }
+
+  async function toggleDailyCompletion(dailyTaskId) {
+    const uid = session.user.id;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const existing = dailyTaskCompletions.find(
+      c => c.daily_task_id === dailyTaskId && c.completed_date === todayStr
+    );
+    if (existing) {
+      await supabase.from("daily_task_completions").delete().eq("id", existing.id);
+      setDailyCompletions(p => p.filter(c => c.id !== existing.id));
+      const task = tasks.find(t => t.daily_task_id === dailyTaskId && t.due_date === todayStr);
+      if (task) await updateTask(task.id, { done: false });
+    } else {
+      const { data } = await supabase.from("daily_task_completions").insert({
+        daily_task_id: dailyTaskId, user_id: uid, completed_date: todayStr,
+      }).select().single();
+      if (data) setDailyCompletions(p => [...p, data]);
+      const task = tasks.find(t => t.daily_task_id === dailyTaskId && t.due_date === todayStr);
+      if (task) await updateTask(task.id, { done: true });
+    }
+  }
+
+  async function addDailyCompletion(dailyTaskId, date) {
+    const uid = session.user.id;
+    const already = dailyTaskCompletions.find(
+      c => c.daily_task_id === dailyTaskId && c.completed_date === date
+    );
+    if (already) return;
+    const { data } = await supabase.from("daily_task_completions").insert({
+      daily_task_id: dailyTaskId, user_id: uid, completed_date: date,
+    }).select().single();
+    if (data) setDailyCompletions(p => [...p, data]);
   }
 
   async function updateCategory(id, updates) {
@@ -422,6 +495,9 @@ export default function App() {
   const hour         = new Date().getHours();
   const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const activeTasks  = tasks.filter(t => !t.done);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const completedTodayIds = new Set(dailyTaskCompletions.filter(c => c.completed_date === todayStr).map(c => c.daily_task_id));
+  const uncompletedDailyCount = dailyTasks.filter(dt => dt.start_date <= todayStr && dt.end_date >= todayStr && !completedTodayIds.has(dt.id)).length;
 
   const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -453,6 +529,17 @@ export default function App() {
           <rect x="1.5" y="2.5" width="13" height="12" rx="1.5"/>
           <line x1="5" y1="1.5" x2="5" y2="4"/><line x1="11" y1="1.5" x2="11" y2="4"/>
           <line x1="1.5" y1="6.5" x2="14.5" y2="6.5"/>
+        </svg>
+      ),
+    },
+    {
+      id: "daily-tasks", label: "Daily Tasks", badge: uncompletedDailyCount || null,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1.5" y="2.5" width="13" height="12" rx="1.5"/>
+          <line x1="5" y1="1.5" x2="5" y2="4"/><line x1="11" y1="1.5" x2="11" y2="4"/>
+          <line x1="1.5" y1="6.5" x2="14.5" y2="6.5"/>
+          <polyline points="5,10.5 7,12.5 11,8.5"/>
         </svg>
       ),
     },
@@ -585,14 +672,14 @@ export default function App() {
         {/* Page content */}
         <main className="flex-1">
           {page === "dashboard" && (
-            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask}
+            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask} deleteTask={deleteTask}
               events={events} addEvent={addEvent} categories={normCats}
               taskTypes={taskTypes}
               eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
               onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
           )}
           {page === "calendar" && (
-            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask}
+            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask} deleteTask={deleteTask}
               events={events} addEvent={addEvent} categories={normCats}
               taskTypes={taskTypes}
               eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
@@ -600,10 +687,16 @@ export default function App() {
           )}
           {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} onColorChange={setPomodoroColor} />}
           {page === "tasks" && (
-            <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask}
+            <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask} deleteTask={deleteTask}
               categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
               taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
-              onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted} />
+              onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted}
+              onAddDailyTask={addDailyTask} completeDailyInstance={addDailyCompletion} />
+          )}
+          {page === "daily-tasks" && (
+            <DailyTasks
+              dailyTasks={dailyTasks} dailyTaskCompletions={dailyTaskCompletions}
+              categories={normCats} onAddDailyTask={addDailyTask} onToggleCompletion={toggleDailyCompletion} />
           )}
           {page === "settings" && (
             <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut}
