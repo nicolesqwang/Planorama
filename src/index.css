@@ -1,21 +1,128 @@
 @import "tailwindcss";
+
 body { font-family: 'Nunito', system-ui, sans-serif; }
 
-/* ── Theme CSS variable defaults (green) ── */
+/* ════════════════════════════════════════════════════════════
+   bloomtasks — cream base · dusty rose · muted olive sage
+   ════════════════════════════════════════════════════════════ */
 :root {
-  --t-primary: #4A5C35;
-  --t-primary-hover: #3D4D2C;
-  --t-on-primary: #EEF1DE;
-  --t-bg-page: #FAFBF6;
-  --t-bg-card: #F4F5EC;
-  --t-bg-input: #E5E9CA;
-  --t-bg-accent: #D6DAB2;
-  --t-border: #C0C5A0;
-  --t-text-dark: #3A4A28;
-  --t-text-med: #6B7255;
-  --t-text-muted: #8A9170;
+  --cream:       #FBF7EF;
+  --cream-2:     #F4EEDF;
+  --surface:     #FFFDF8;
+  --rose:        #E3A6BB;
+  --rose-deep:   #B5677F;
+  --rose-soft:   #F6DCE4;
+  --sage:        #A6B07E;
+  --sage-deep:   #6E7B45;
+  --sage-soft:   #E9ECD9;
+  --butter:      #EFCD80;
+  --butter-soft: #FAF0CE;
+  --plum:        #463A40;
+  --plum-mid:    #7C6A72;
+  --plum-light:  #A99CA2;
+  --border:      #EADFCE;
+  --border-rose: #EFCBD6;
+  --border-sage: #CBD3A8;
+
+  /* themed tokens consumed across the app */
+  --t-primary:        #E3A6BB;
+  --t-primary-hover:  #B5677F;
+  --t-on-primary:     #5A3A42;
+  --t-bg-page:        #FBF7EF;
+  --t-bg-card:        #FFFDF8;
+  --t-bg-input:       #FBF7EF;
+  --t-bg-accent:      #E9ECD9;
+  --t-border:         #EADFCE;
+  --t-text-dark:      #463A40;
+  --t-text-med:       #7C6A72;
+  --t-text-muted:     #A99CA2;
+  --t-rose-ink:       #B5677F;
 }
 
-/* Nav hover — needs CSS class since Tailwind can't do hover: with CSS vars in arbitrary values */
+/* Nav hover */
 .nav-item-inactive { color: var(--t-text-med); }
-.nav-item-inactive:hover { background-color: var(--t-bg-accent); }
+.nav-item-inactive:hover { background-color: rgba(246, 220, 228, 0.55); }
+
+/* ── Layered background: soft color auras + a large grid that fades
+   away toward the edges, like the grid itself is part of the glow ── */
+.bg-bloom {
+  background-color: var(--cream);
+  background-image:
+    radial-gradient(circle at 14% 16%, rgba(166, 176, 126, 0.20), transparent 40%),
+    radial-gradient(circle at 86% 10%, rgba(227, 166, 187, 0.18), transparent 38%),
+    radial-gradient(circle at 80% 86%, rgba(239, 205, 128, 0.15), transparent 42%),
+    radial-gradient(circle at 18% 90%, rgba(166, 176, 126, 0.13), transparent 40%);
+  background-size: 100% 100%;
+  background-attachment: fixed;
+  position: relative;
+}
+.bg-bloom::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(124, 106, 114, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 106, 114, 0.07) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 38%, black 0%, transparent 78%);
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 38%, black 0%, transparent 78%);
+}
+.bg-bloom > * { position: relative; z-index: 1; }
+
+/* a second, larger soft dot pattern that also fades — used on a few pages
+   for variety instead of the grid */
+.pat-dots-fade {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(181, 103, 127, 0.16) 2px, transparent 2px);
+  background-size: 38px 38px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 70% 20%, black 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 70% 20%, black 0%, transparent 75%);
+}
+
+/* ── Soft glow auras (decorative blurred blobs) ───────────────── */
+.aura {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(54px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+.aura-rose  { background: radial-gradient(circle, rgba(227,166,187,0.55), transparent 70%); }
+.aura-sage  { background: radial-gradient(circle, rgba(166,176,126,0.50), transparent 70%); }
+.aura-butter{ background: radial-gradient(circle, rgba(239,205,128,0.45), transparent 70%); }
+
+/* soft card glow */
+.glow-rose { box-shadow: 0 6px 22px -14px rgba(181,103,127,0.35); }
+.glow-sage { box-shadow: 0 6px 22px -14px rgba(110,123,69,0.30); }
+.glow-soft { box-shadow: 0 5px 18px -12px rgba(70,58,64,0.22); }
+
+/* ── Kawaii custom checkbox — rounded, rose check ─────────────── */
+.kawaii-checkbox {
+  appearance: none; -webkit-appearance: none;
+  width: 20px; height: 20px; border-radius: 7px;
+  border: 1.5px solid var(--border-rose);
+  background: var(--surface);
+  cursor: pointer; flex-shrink: 0; position: relative;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.kawaii-checkbox:hover { border-color: var(--rose); }
+.kawaii-checkbox:checked { background: var(--rose); border-color: var(--rose-deep); }
+.kawaii-checkbox:checked::after {
+  content: ""; position: absolute; left: 6px; top: 2px;
+  width: 5px; height: 10px;
+  border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.kawaii-checkbox:disabled { cursor: default; opacity: 0.7; }
+
+/* one quiet divider style — used sparingly */
+.divider-soft { border-top: 1px solid var(--border); }
+
+/* thin pretty scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border-rose) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--border-rose); border-radius: 9999px; }
+*::-webkit-scrollbar-track { background: transparent; }

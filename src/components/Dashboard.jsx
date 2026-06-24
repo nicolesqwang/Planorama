@@ -17,10 +17,10 @@ function getTimeLeft(dueDate, dueTime) {
 }
 
 function getUrgencyStyle(rawDays) {
-  if (rawDays < 0)    return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
-  if (rawDays <= 1)   return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
-  if (rawDays <= 7)   return "bg-[#F1F0C8] text-[#7A7230] font-semibold";
-  return "bg-[var(--t-bg-accent)] text-[var(--t-primary)] font-semibold";
+  if (rawDays < 0)    return "bg-[#FAD4DF] text-[#D4708A] font-semibold";
+  if (rawDays <= 1)   return "bg-[#FAD4DF] text-[#D4708A] font-semibold";
+  if (rawDays <= 7)   return "bg-[#FEF3C7] text-[#A07B2A] font-semibold";
+  return "bg-[#EEF5EA] text-[#5E8F52] font-semibold";
 }
 
 function getCatStyle(catName, categories) {
@@ -38,7 +38,7 @@ function StatListModal({ title, items, categories, onClose, onSelectItem }) {
         </div>
         <div className="overflow-y-auto flex-1">
           {items.length === 0 && (
-            <p className="text-sm text-[var(--t-text-muted)] px-6 py-10 text-center font-medium">Nothing here — you&apos;re all clear!</p>
+            <p className="text-sm text-[var(--t-text-muted)] px-6 py-10 text-center font-medium">nothing here ✿ enjoy your free time!</p>
           )}
           {items.map(item => {
             const date = item._date;
@@ -101,7 +101,7 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
           <button onClick={onClose} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl leading-none">×</button>
         </div>
         <div className="flex items-center gap-2 mb-4">
-          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${isTask ? "bg-[var(--t-bg-accent)] text-[var(--t-primary)]" : "bg-[#EDE8F5] text-[#5A4A7A]"}`}>
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wide ${isTask ? "bg-[var(--t-bg-accent)] text-[var(--t-rose-ink)]" : "bg-[#EDE8F5] text-[#6B5CA5]"}`}>
             {isTask ? "Task" : "Event"}
           </span>
           <span className={`text-xs px-3 py-0.5 rounded-full ${getUrgencyStyle(raw)}`}>
@@ -165,7 +165,7 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
               <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Event Type</label>
               <div className="flex flex-wrap gap-2">
                 {(item.event_types || []).map(t => (
-                  <span key={t} className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EDE8F5] text-[#5A4A7A]">{t}</span>
+                  <span key={t} className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EDE8F5] text-[#6B5CA5]">{t}</span>
                 ))}
               </div>
             </div>
@@ -363,13 +363,13 @@ function AddTaskModal({ onClose, onAdd, categories, taskTypes = [] }) {
 // ── Upcoming panel ──────────────────────────────────────────────
 function UpcomingPanel({ items, categories, onSelectItem }) {
   return (
-    <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-[14px] p-[13px_14px]">
+    <div className="rounded-2xl p-[15px_16px] glow-sage" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center justify-between mb-3">
-        <h3 style={lora} className="text-[13px] text-[var(--t-text-dark)]">Upcoming</h3>
-        <span className="text-[10px] text-[var(--t-text-muted)] font-medium">next 7 days</span>
+        <h3 style={lora} className="text-[16px] text-[var(--t-text-dark)]">Upcoming</h3>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--sage-soft)", color: "var(--sage-deep)" }}>next 7 days</span>
       </div>
       <div className="flex flex-col">
-        {items.length === 0 && <p className="text-xs text-[var(--t-text-muted)] font-medium py-3 text-center">Nothing due this week!</p>}
+        {items.length === 0 && <p className="text-xs text-[var(--t-text-muted)] font-medium py-3 text-center">nothing due this week ✿</p>}
         {items.slice(0, 7).map(task => {
           const { raw } = getTimeLeft(task.due_date, task.due_time);
           const catStyle = getCatStyle(task.categories?.[0], categories);
@@ -397,16 +397,16 @@ function QuickAddPanel({ onAdd, categories }) {
   const canSubmit = name.trim() && dueDate && selCat;
 
   return (
-    <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-[14px] p-[13px_14px]">
-      <h3 style={lora} className="text-[13px] text-[var(--t-text-dark)] mb-3">Quick add</h3>
+    <div className="rounded-2xl glow-rose p-[15px_16px]" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+      <h3 style={lora} className="text-[16px] text-[var(--t-text-dark)] mb-3">Quick add</h3>
       <div className="flex flex-col gap-2">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Task name..."
-          className="w-full text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
+          className="w-full text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
         <div className="grid grid-cols-2 gap-2">
           <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-            className="text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
+            className="text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]" />
           <select value={selCat} onChange={e => setSelCat(e.target.value)}
-            className="text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]">
+            className="text-[11.5px] bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 font-medium text-[var(--t-text-dark)]">
             <option value="">Category</option>
             {categories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
@@ -415,7 +415,8 @@ function QuickAddPanel({ onAdd, categories }) {
           onAdd({ name, dueDate, dueTime: "23:59", categories: selCat ? [selCat] : [], types: [], done: false, notes: "" });
           setName(""); setDueDate(""); setSelCat("");
         }} disabled={!canSubmit}
-          className="w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-[11.5px] font-semibold py-2 rounded-lg transition-colors">
+          className="w-full disabled:opacity-40 disabled:cursor-not-allowed text-[11.5px] font-bold py-2 rounded-full transition-colors"
+          style={{ background: "var(--rose)", color: "#fff" }}>
           Add Task
         </button>
       </div>
@@ -433,10 +434,17 @@ function CalendarView({ tasks, events, categories, onSelectItem }) {
   const cells = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   const isToday = d => d && today.getDate() === d && today.getMonth() === month && today.getFullYear() === year;
 
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
   function itemsOnDay(day) {
     if (!day) return [];
     const ds = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-    const t = tasks.filter(t => !t.done && t.due_date === ds).map(t => ({ ...t, _type: "task" }));
+    const t = tasks.filter(t => {
+      if (t.done || t.due_date !== ds) return false;
+      // Past daily-task instances are done with — don't clutter the calendar with them
+      if (t.daily_task_id && ds < todayKey) return false;
+      return true;
+    }).map(t => ({ ...t, _type: "task" }));
     const e = events.filter(e => e.date === ds).map(e => ({ ...e, _type: "event" }));
     return [...t, ...e].sort((a,b) => (a.due_time||a.time||"").localeCompare(b.due_time||b.time||""));
   }
@@ -448,45 +456,46 @@ function CalendarView({ tasks, events, categories, onSelectItem }) {
   }
 
   return (
-    <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-[14px] p-5">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setCurrent(new Date(year, month-1, 1))} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-lg px-2 transition-colors">‹</button>
-        <h2 style={lora} className="text-base text-[var(--t-text-dark)]">{MONTHS[month]} {year}</h2>
-        <button onClick={() => setCurrent(new Date(year, month+1, 1))} className="text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-lg px-2 transition-colors">›</button>
+    <div className="rounded-2xl glow-rose p-6" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+      <div className="flex items-center justify-between mb-5">
+        <button onClick={() => setCurrent(new Date(year, month-1, 1))} className="text-[var(--t-text-muted)] hover:text-[var(--rose-deep)] text-2xl px-2 transition-colors">‹</button>
+        <h2 style={lora} className="text-[26px] text-[var(--t-text-dark)]">{MONTHS[month]} {year}</h2>
+        <button onClick={() => setCurrent(new Date(year, month+1, 1))} className="text-[var(--t-text-muted)] hover:text-[var(--rose-deep)] text-2xl px-2 transition-colors">›</button>
       </div>
       <div className="grid grid-cols-7 mb-1">
-        {DAYS.map(d => <div key={d} className="text-center text-[9px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] py-1">{d}</div>)}
+        {DAYS.map(d => <div key={d} className="text-center text-[10.5px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] py-1">{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {cells.map((day, i) => {
           const items = itemsOnDay(day);
           const hasItems = items.length > 0;
           return (
-            <div key={i} className={`min-h-[54px] rounded-lg p-1.5 transition-colors ${day ? "cursor-pointer" : ""} ${isToday(day) ? "bg-[var(--t-bg-accent)] ring-2 ring-[var(--t-primary)]" : hasItems ? "bg-[var(--t-bg-card)]" : ""}`}>
+            <div key={i} className={`min-h-[68px] rounded-xl p-1.5 transition-colors ${day ? "cursor-pointer" : ""} ${hasItems && !isToday(day) ? "bg-[var(--t-bg-page)]" : ""}`}>
               {day && (<>
-                <span className={`text-[9.5px] block mb-0.5 ${isToday(day) ? "font-bold text-[var(--t-text-dark)]" : "font-semibold text-[var(--t-text-muted)]"}`}>{day}</span>
-                <div className="flex flex-col gap-0.5">
+                <span className={`text-[12px] flex items-center justify-center mb-1 ${isToday(day) ? "w-[22px] h-[22px] rounded-full font-bold" : "font-semibold text-[var(--t-text-muted)]"}`}
+                  style={isToday(day) ? { background: "var(--t-primary)", color: "var(--t-on-primary)" } : {}}>{day}</span>
+                <div className="flex flex-col gap-1">
                   {items.slice(0,3).map(item => {
                     const s = getItemStyle(item);
                     return (
                       <div key={`${item._type}-${item.id}`} onClick={() => onSelectItem(item)}
-                        className="text-[7.5px] font-semibold px-1.5 py-0.5 truncate cursor-pointer hover:opacity-75 transition-opacity flex items-center gap-1"
-                        style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: "4px" }}>
+                        className="text-[9.5px] font-bold px-1.5 py-0.5 truncate cursor-pointer hover:opacity-75 transition-opacity flex items-center gap-1"
+                        style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: "6px" }}>
                         <span>{item._type === "event" ? "●" : "◆"}</span>
                         <span className="truncate">{item.name}</span>
                       </div>
                     );
                   })}
-                  {items.length > 3 && <span className="text-[9px] text-[var(--t-text-muted)] font-medium pl-1">+{items.length-3}</span>}
+                  {items.length > 3 && <span className="text-[10px] text-[var(--t-text-muted)] font-bold pl-1">+{items.length-3}</span>}
                 </div>
               </>)}
             </div>
           );
         })}
       </div>
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--t-bg-accent)]">
-        <span className="text-[10px] text-[var(--t-text-muted)] font-semibold">◆ Task</span>
-        <span className="text-[10px] text-[var(--t-text-muted)] font-semibold">● Event</span>
+      <div className="flex items-center gap-4 mt-4 pt-4 divider-soft">
+        <span className="text-[11px] font-bold" style={{ color: "var(--rose-deep)" }}>◆ Task</span>
+        <span className="text-[11px] font-bold" style={{ color: "var(--sage-deep)" }}>● Event</span>
       </div>
     </div>
   );
@@ -504,7 +513,7 @@ function ListView({ tasks, events, categories, onSelectItem }) {
       <div className="grid grid-cols-[2fr_1fr_1fr_80px] px-6 py-3 bg-[var(--t-bg-accent)] text-[9.5px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
         <span>Name</span><span>Date</span><span>Category</span><span className="text-center">Type</span>
       </div>
-      {all.length === 0 && <p className="text-sm text-[var(--t-text-muted)] px-6 py-10 text-center font-medium">No upcoming tasks or events!</p>}
+      {all.length === 0 && <p className="text-sm text-[var(--t-text-muted)] px-6 py-10 text-center font-medium">no upcoming tasks or events ✦ enjoy the calm!</p>}
       {all.map(item => {
         const { value, unit, raw } = getTimeLeft(item._date, item._time || "23:59");
         const catName = item._type === "task" ? item.categories?.[0] : item.category;
@@ -519,7 +528,7 @@ function ListView({ tasks, events, categories, onSelectItem }) {
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full w-fit"
               style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>{catName || "—"}</span>
             <div className="flex justify-center">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item._type === "event" ? "bg-[#EDE8F5] text-[#5A4A7A]" : "bg-[var(--t-bg-accent)] text-[var(--t-primary)]"}`}>{item._type}</span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item._type === "event" ? "bg-[#EDE8F5] text-[#6B5CA5]" : "bg-[var(--t-bg-accent)] text-[var(--t-rose-ink)]"}`}>{item._type}</span>
             </div>
           </div>
         );
@@ -557,30 +566,38 @@ export default function Dashboard({
     .map(e => ({ ...e, _type: "event", _date: e.date, _time: e.time }));
 
   const STAT_CONFIG = [
-    { key: "week",      label: "Due This Week", items: weekItems,          bg: "bg-[#FFF3CE]", border: "border-[#E8D88A]", valueColor: "text-[var(--t-text-dark)]" },
-    { key: "overdue",   label: "Overdue",        items: overdueItems,       bg: "bg-[#C8DFF5]", border: "border-[#94BDE0]", valueColor: "text-[#2A4A6B]" },
-    { key: "completed", label: "Completed",      items: completedItems,     bg: "bg-[#F9C9C9]", border: "border-[#E89090]", valueColor: "text-[var(--t-text-dark)]" },
-    { key: "events",    label: "Events",         items: upcomingEventItems, bg: "bg-[#A8C896]", border: "border-[#7AAB66]", valueColor: "text-[#2A4A1A]" },
+    { key: "week",      label: "Due This Week", emoji: "✿", items: weekItems,          bg: "var(--rose-soft)",   border: "var(--border-rose)", ink: "var(--rose-deep)" },
+    { key: "overdue",   label: "Overdue",        emoji: "⏰", items: overdueItems,       bg: "#F6E5DE",            border: "#E7B9A4",            ink: "#B5673F" },
+    { key: "completed", label: "Completed",      emoji: "🌿", items: completedItems,     bg: "var(--sage-soft)",   border: "var(--border-sage)", ink: "var(--sage-deep)" },
+    { key: "events",    label: "Events",         emoji: "✦", items: upcomingEventItems, bg: "var(--butter-soft)", border: "#EAD08A",            ink: "#A9852F" },
   ];
 
   return (
-    <div className="bg-[var(--t-bg-page)] min-h-screen p-[18px_22px]">
-      <div className="flex items-center justify-between mb-4">
-        <h2 style={lora} className="text-xl text-[var(--t-text-dark)]">{calendarOnly ? "Calendar" : "Overview"}</h2>
+    <div className="min-h-screen p-[24px_28px] relative">
+      {/* decorative auras */}
+      <div className="aura aura-rose"  style={{ width: 280, height: 280, top: -60, right: 40 }} />
+      <div className="aura aura-sage"  style={{ width: 260, height: 260, bottom: 20, left: -40 }} />
+
+      <div className="relative z-10">
+      <div className="flex items-center justify-between mb-5">
+        <h2 style={lora} className="text-[30px] text-[var(--t-text-dark)]">{calendarOnly ? "Calendar" : "Overview"}</h2>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowAddTask(true)}
-            className="bg-[var(--t-bg-accent)] border border-[var(--t-border)] hover:bg-[var(--t-border)] text-[var(--t-text-med)] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
+            className="text-[13px] font-bold px-4 py-2 rounded-full transition-all glow-rose"
+            style={{ background: "var(--rose)", color: "#fff" }}>
             + Task
           </button>
           <button onClick={() => setShowAddEvent(true)}
-            className="bg-[var(--t-bg-accent)] border border-[var(--t-border)] hover:bg-[var(--t-border)] text-[var(--t-text-med)] text-[11.5px] font-bold px-3.5 py-2 rounded-[9px] transition-all">
+            className="text-[13px] font-bold px-4 py-2 rounded-full transition-all border-[1.5px]"
+            style={{ background: "var(--surface)", borderColor: "var(--border-sage)", color: "var(--sage-deep)" }}>
             + Event
           </button>
           {!calendarOnly && (
-            <div className="flex items-center gap-1 bg-[var(--t-bg-accent)] border border-[var(--t-border)] rounded-[9px] p-1 ml-1">
+            <div className="flex items-center gap-1 rounded-full p-1 ml-1 border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               {[["calendar","Calendar"],["list","List"]].map(([id,label]) => (
                 <button key={id} onClick={() => setView(id)}
-                  className={`px-3.5 py-1.5 rounded-[7px] text-[11.5px] font-bold transition-all ${view===id ? "bg-[var(--t-bg-card)] text-[var(--t-text-dark)] shadow-sm" : "text-[var(--t-text-med)] hover:text-[var(--t-text-dark)]"}`}>
+                  className="px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all"
+                  style={view===id ? { background: "var(--rose-soft)", color: "var(--rose-deep)" } : { color: "var(--t-text-med)" }}>
                   {label}
                 </button>
               ))}
@@ -590,12 +607,13 @@ export default function Dashboard({
       </div>
 
       {!calendarOnly && (
-        <div className="grid grid-cols-4 gap-[10px] mb-4">
+        <div className="grid grid-cols-4 gap-[14px] mb-5">
           {STAT_CONFIG.map(s => (
             <div key={s.key} onClick={() => setStatModal(s.key)}
-              className={`${s.bg} border ${s.border} rounded-[13px] px-[15px] py-[13px] cursor-pointer hover:opacity-90 transition-opacity`}>
-              <p className="text-[9.5px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">{s.label}</p>
-              <p className={`text-[26px] font-bold leading-none ${s.valueColor}`}>{s.items.length}</p>
+              className="rounded-2xl px-[18px] py-[16px] cursor-pointer transition-transform hover:-translate-y-0.5"
+              style={{ background: s.bg, border: `1px solid ${s.border}` }}>
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.8px] mb-1.5" style={{ color: s.ink }}>{s.emoji} {s.label}</p>
+              <p className="text-[38px] leading-none" style={{ ...lora, color: s.ink }}>{s.items.length}</p>
             </div>
           ))}
         </div>
@@ -616,6 +634,7 @@ export default function Dashboard({
           </div>
         </div>
       )}
+      </div>
 
       {statModal && !statDetailItem && (
         <StatListModal title={STAT_CONFIG.find(s => s.key === statModal)?.label || ""}

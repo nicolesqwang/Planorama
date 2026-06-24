@@ -16,13 +16,49 @@ function getTimeLeft(dueDate, dueTime) {
 }
 
 function getUrgencyStyle(rawDays) {
-  if (rawDays < 0)       return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
-  if (rawDays <= 1/24)   return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
-  if (rawDays <= 5/1440) return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
-  if (rawDays <= 1)      return "bg-[#EDD9CF] text-[#9B5B3A] font-semibold";
-  if (rawDays <= 5)      return "bg-[#F1F0C8] text-[#7A7230] font-semibold";
-  return "bg-[var(--t-bg-accent)] text-[var(--t-primary)] font-semibold";
+  if (rawDays < 0)       return "bg-[#FAD4DF] text-[#D4708A] font-semibold";
+  if (rawDays <= 1/24)   return "bg-[#FAD4DF] text-[#D4708A] font-semibold";
+  if (rawDays <= 5/1440) return "bg-[#FAD4DF] text-[#D4708A] font-semibold";
+  if (rawDays <= 1)      return "bg-[#FAD4DF] text-[#D4708A] font-semibold";
+  if (rawDays <= 5)      return "bg-[#FEF3C7] text-[#A07B2A] font-semibold";
+  return "bg-[#EEF5EA] text-[#5E8F52] font-semibold";
 }
+
+// ── On-theme category color catalog (~30 muted combos) ───────────
+// All desaturated pastels that sit comfortably with the cream/rose/sage base —
+// no super-saturated or super-dark colors.
+const CATEGORY_PALETTE = [
+  { name: "Blush Rose",  bg: "#F6DCE4", text: "#B5677F", border: "#EFCBD6" },
+  { name: "Dusty Pink",  bg: "#F3D3DC", text: "#A85870", border: "#E8B9C6" },
+  { name: "Rosewood",    bg: "#EBD8D9", text: "#8C5158", border: "#D9B6B8" },
+  { name: "Berry",       bg: "#F2DCE2", text: "#94445D", border: "#E5BAC7" },
+  { name: "Soft Coral",  bg: "#FBE0D6", text: "#B5613F", border: "#F0C3AE" },
+  { name: "Peach",       bg: "#FCE8D6", text: "#AD7038", border: "#F2D0AE" },
+  { name: "Terracotta",  bg: "#F3DACB", text: "#9A5535", border: "#E3BB9D" },
+  { name: "Clay",        bg: "#EFDCCF", text: "#85543A", border: "#DDBE9E" },
+  { name: "Sand",        bg: "#F1E8D8", text: "#83694D", border: "#DCCBA8" },
+  { name: "Latte",       bg: "#EFE5D8", text: "#776048", border: "#D9C7AC" },
+  { name: "Butter",      bg: "#FAF0CE", text: "#9C7F2C", border: "#EAD08A" },
+  { name: "Honey",       bg: "#F8EBC9", text: "#937526", border: "#E4CB8E" },
+  { name: "Cream Gold",  bg: "#F6EEDA", text: "#937C32", border: "#E6D49E" },
+  { name: "Soft Yellow", bg: "#FAF0CB", text: "#9C8829", border: "#ECDD92" },
+  { name: "Sage",        bg: "#E9ECD9", text: "#6E7B45", border: "#CBD3A8" },
+  { name: "Olive",       bg: "#ECEFD9", text: "#697340", border: "#C9D1AC" },
+  { name: "Matcha",      bg: "#E5EAD3", text: "#62713B", border: "#C2CE9C" },
+  { name: "Apple Green", bg: "#E3EDCB", text: "#59702B", border: "#C3D69B" },
+  { name: "Forest Mist", bg: "#DDE7D1", text: "#4B6437", border: "#B9CCA3" },
+  { name: "Mint",        bg: "#DCEFE2", text: "#488264", border: "#AFD9C2" },
+  { name: "Eucalyptus",  bg: "#DDEAE5", text: "#47766C", border: "#ADD0C6" },
+  { name: "Seafoam",     bg: "#D9EDE6", text: "#3B7861", border: "#A9D4C3" },
+  { name: "Sky",         bg: "#DCE9F2", text: "#476C8A", border: "#AECBE0" },
+  { name: "Powder Blue", bg: "#DCE7EF", text: "#496883", border: "#ADC8DC" },
+  { name: "Denim",       bg: "#DEE3EF", text: "#4A5982", border: "#B3C0DE" },
+  { name: "Periwinkle",  bg: "#E2E3F4", text: "#555998", border: "#C2C5EA" },
+  { name: "Lavender",    bg: "#EBE3F2", text: "#705386", border: "#D4C2E5" },
+  { name: "Lilac",       bg: "#F1E4F0", text: "#83497A", border: "#E2C3DD" },
+  { name: "Mauve",       bg: "#EADFE6", text: "#705278", border: "#D2BFD9" },
+  { name: "Plum",        bg: "#F1E0E8", text: "#85455F", border: "#E1BFCF" },
+];
 
 function CategoryPill({ cat, categories }) {
   const s = categories.find(c => c.name === cat) || { bg: "var(--t-bg-input)", text: "var(--t-text-med)", border: "var(--t-border)" };
@@ -32,103 +68,34 @@ function CategoryPill({ cat, categories }) {
   );
 }
 
-// ── Color suggestion helper ────────────────────────────────────
-function hexToHsl(hex) {
-  let r = parseInt(hex.slice(1,3),16)/255;
-  let g = parseInt(hex.slice(3,5),16)/255;
-  let b = parseInt(hex.slice(5,7),16)/255;
-  const max = Math.max(r,g,b), min = Math.min(r,g,b);
-  let h, s, l = (max+min)/2;
-  if (max === min) { h = s = 0; }
-  else {
-    const d = max - min;
-    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
-    switch(max) {
-      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
-      case g: h = ((b-r)/d + 2)/6; break;
-      default: h = ((r-g)/d + 4)/6;
-    }
-  }
-  return [h*360, s*100, l*100];
-}
-
-function hslToHex(h, s, l) {
-  h/=360; s/=100; l/=100;
-  let r,g,b;
-  if (s===0) { r=g=b=l; }
-  else {
-    const hue2rgb = (p,q,t) => {
-      if(t<0)t+=1; if(t>1)t-=1;
-      if(t<1/6)return p+(q-p)*6*t;
-      if(t<1/2)return q;
-      if(t<2/3)return p+(q-p)*(2/3-t)*6;
-      return p;
-    };
-    const q = l<0.5 ? l*(1+s) : l+s-l*s;
-    const p = 2*l-q;
-    r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
-  }
-  return "#"+[r,g,b].map(x=>Math.round(x*255).toString(16).padStart(2,"0")).join("");
-}
-
-function suggestFromBg(bgHex) {
-  const [h, s, l] = hexToHsl(bgHex);
-  const isLight = l > 55;
-  const textL  = isLight ? Math.max(l - 50, 15) : Math.min(l + 55, 92);
-  const borderL = isLight ? Math.max(l - 25, 30) : Math.min(l + 30, 80);
-  const textS  = Math.min(s + 10, 80);
-  const borderS = Math.max(s - 10, 20);
-  return {
-    text:   hslToHex(h, textS,  textL),
-    border: hslToHex(h, borderS, borderL),
-  };
-}
-
-// ── Color editor sub-form ──────────────────────────────────────
-function CatColorForm({ name, bg, text, border, onNameChange, onBgChange, onTextChange, onBorderChange, bgTouched, userEditedText, userEditedBorder }) {
+// ── Category name + color picker (catalog popover, no color wheel) ──
+function ColorPicker({ name, onNameChange, selected, open, onToggle, onSelect }) {
+  const p = CATEGORY_PALETTE[selected];
   return (
-    <>
+    <div className="flex items-center gap-2">
       <input value={name} onChange={e => onNameChange(e.target.value)} placeholder="e.g. Biology, Economics, Work"
-        className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
-      <div className="flex gap-4 items-end flex-wrap">
-        <label className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
-          Background
-          <input type="color" value={bg} onChange={e => onBgChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
-        </label>
-        <label className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
-          <span className="flex items-center gap-1">Text {!userEditedText && bgTouched && <span className="text-[var(--t-primary)] text-[10px]">auto</span>}</span>
-          <input type="color" value={text} onChange={e => onTextChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
-        </label>
-        <label className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
-          <span className="flex items-center gap-1">Border {!userEditedBorder && bgTouched && <span className="text-[var(--t-primary)] text-[10px]">auto</span>}</span>
-          <input type="color" value={border} onChange={e => onBorderChange(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0" />
-        </label>
-        <div className="flex flex-col gap-1 text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">
-          Preview
-          <span className="text-xs font-medium px-3 py-1 rounded-full mt-1" style={{ background: bg, color: text, border: `1px solid ${border}` }}>
-            {name || "Preview"}
-          </span>
-        </div>
+        className="flex-1 text-sm bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
+      <div className="relative flex-shrink-0">
+        <button type="button" onClick={onToggle} title="Choose a color"
+          className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border transition-all"
+          style={{ background: p.bg, color: p.text, borderColor: p.border }}>
+          <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ background: p.bg, border: `1.5px solid ${p.text}` }} />
+          Colors
+        </button>
+        {open && (
+          <div className="absolute right-0 top-[calc(100%+6px)] z-20 p-3 rounded-2xl shadow-xl grid grid-cols-6 gap-2 w-[216px]"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            {CATEGORY_PALETTE.map((c, i) => (
+              <button key={c.name} type="button" title={c.name} onClick={() => { onSelect(i); onToggle(); }}
+                className="w-7 h-7 rounded-full transition-transform hover:scale-110 flex items-center justify-center"
+                style={{ background: c.bg, border: selected === i ? `2.5px solid ${c.text}` : `1.5px solid ${c.border}` }}>
+                {selected === i && <span style={{ color: c.text, fontSize: "10px", fontWeight: 700 }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-      {bgTouched && (!userEditedText || !userEditedBorder) && (
-        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[var(--t-bg-accent)] border border-[var(--t-border)]">
-          <span className="text-[11px] text-[var(--t-text-med)]">Suggested from background:</span>
-          {!userEditedText && (
-            <span className="flex items-center gap-1 text-[11px] text-[var(--t-text-med)]">
-              <span className="w-3.5 h-3.5 rounded-full border border-[var(--t-border)] inline-block" style={{ background: text }} />
-              text
-            </span>
-          )}
-          {!userEditedBorder && (
-            <span className="flex items-center gap-1 text-[11px] text-[var(--t-text-med)]">
-              <span className="w-3.5 h-3.5 rounded-full border border-[var(--t-border)] inline-block" style={{ background: border }} />
-              border
-            </span>
-          )}
-          <span className="text-[10px] text-[var(--t-text-muted)] ml-auto">Edit the pickers above to override</span>
-        </div>
-      )}
-    </>
+    </div>
   );
 }
 
@@ -136,57 +103,45 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
   const [tab, setTab]             = useState("categories");
   const [editingCatId, setEditingCatId] = useState(null);
 
-  const [catName, setCatName]     = useState("");
-  const [catBg, setCatBg]         = useState("var(--t-bg-accent)");
-  const [catText, setCatText]     = useState("var(--t-primary)");
-  const [catBorder, setCatBorder] = useState("var(--t-border)");
-  const [bgTouched, setBgTouched] = useState(false);
-  const [userEditedText, setUserEditedText]   = useState(false);
-  const [userEditedBorder, setUserEditedBorder] = useState(false);
+  const [catName, setCatName]         = useState("");
+  const [catPreset, setCatPreset]     = useState(0);
+  const [catColorOpen, setCatColorOpen] = useState(false);
 
-  const [editName, setEditName]     = useState("");
-  const [editBg, setEditBg]         = useState("");
-  const [editText, setEditText]     = useState("");
-  const [editBorder, setEditBorder] = useState("");
-  const [editBgTouched, setEditBgTouched]           = useState(false);
-  const [editUserEditedText, setEditUserEditedText]   = useState(false);
-  const [editUserEditedBorder, setEditUserEditedBorder] = useState(false);
+  const [editName, setEditName]       = useState("");
+  const [editPreset, setEditPreset]   = useState(0);
+  const [editColorOpen, setEditColorOpen] = useState(false);
 
   const [typeName, setTypeName] = useState("");
   const [saving, setSaving]     = useState(false);
 
   function startEdit(cat) {
     setEditingCatId(cat.id);
-    setEditName(cat.name); setEditBg(cat.bg); setEditText(cat.text); setEditBorder(cat.border);
-    setEditBgTouched(false); setEditUserEditedText(false); setEditUserEditedBorder(false);
-  }
-
-  function applyBgSuggest(hex, setB, setT, setBd, userT, userBd, setTouch) {
-    setB(hex); setTouch(true);
-    if (!userT) { const s = suggestFromBg(hex); setT(s.text); }
-    if (!userBd) { const s = suggestFromBg(hex); setBd(s.border); }
+    setEditName(cat.name);
+    const presetIdx = CATEGORY_PALETTE.findIndex(p => p.bg === cat.bg && p.text === cat.text);
+    setEditPreset(presetIdx >= 0 ? presetIdx : 0);
+    setEditColorOpen(false);
   }
 
   async function handleAddCat() {
     if (!catName.trim() || categories.find(c => c.name === catName.trim())) return;
     setSaving(true);
-    await addCategory({ name: catName.trim(), bg: catBg, text: catText, border: catBorder });
-    setCatName(""); setSaving(false);
-    setBgTouched(false); setUserEditedText(false); setUserEditedBorder(false);
-    setCatBg("var(--t-bg-accent)"); setCatText("var(--t-primary)"); setCatBorder("var(--t-border)");
+    const p = CATEGORY_PALETTE[catPreset];
+    await addCategory({ name: catName.trim(), bg: p.bg, text: p.text, border: p.border });
+    setCatName(""); setCatPreset(0); setSaving(false);
   }
 
   async function handleSaveEdit(id) {
     setSaving(true);
-    await updateCategory(id, { name: editName.trim(), bg: editBg, text: editText, border: editBorder });
+    const p = CATEGORY_PALETTE[editPreset];
+    await updateCategory(id, { name: editName.trim(), bg: p.bg, text: p.text, border: p.border });
     setEditingCatId(null); setSaving(false);
   }
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[540px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+      <div className="bg-[var(--t-bg-card)] border-[1.5px] border-[var(--t-primary)] rounded-2xl shadow-xl w-[540px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
-        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-4">Manage Categories & Types</h2>
+        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-4">Manage Categories & Types ✿</h2>
         <div className="flex gap-2 mb-5">
           {["categories","types"].map(t => (
             <button key={t} onClick={() => setTab(t)}
@@ -202,12 +157,12 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
             <div className="flex flex-col gap-2 mb-5">
               {categories.map(cat => (
                 <div key={cat.id}>
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--t-bg-input)]">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--t-bg-input)] border border-[var(--t-border)]">
                     <span className="text-xs font-medium px-3 py-1 rounded-full"
                       style={{ background: cat.bg, color: cat.text, border: `1px solid ${cat.border}` }}>{cat.name}</span>
                     <div className="flex gap-2">
                       <button onClick={() => editingCatId === cat.id ? setEditingCatId(null) : startEdit(cat)}
-                        className="text-xs text-[var(--t-text-muted)] hover:text-[var(--t-primary)]">
+                        className="text-xs text-[var(--t-text-muted)] hover:text-[var(--t-rose-ink)]">
                         {editingCatId === cat.id ? "Cancel" : "Edit"}
                       </button>
                       <button onClick={() => removeCategory(cat.id)} className="text-xs text-red-400 hover:text-red-600">Remove</button>
@@ -216,14 +171,8 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
                   {editingCatId === cat.id && (
                     <div className="bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4 flex flex-col gap-3 mt-1">
                       <p className="text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">Edit Category</p>
-                      <CatColorForm
-                        name={editName} bg={editBg} text={editText} border={editBorder}
-                        bgTouched={editBgTouched} userEditedText={editUserEditedText} userEditedBorder={editUserEditedBorder}
-                        onNameChange={setEditName}
-                        onBgChange={hex => applyBgSuggest(hex, setEditBg, setEditText, setEditBorder, editUserEditedText, editUserEditedBorder, setEditBgTouched)}
-                        onTextChange={v => { setEditText(v); setEditUserEditedText(true); }}
-                        onBorderChange={v => { setEditBorder(v); setEditUserEditedBorder(true); }}
-                      />
+                      <ColorPicker name={editName} onNameChange={setEditName} selected={editPreset}
+                        open={editColorOpen} onToggle={() => setEditColorOpen(o => !o)} onSelect={setEditPreset} />
                       <button onClick={() => handleSaveEdit(cat.id)} disabled={!editName.trim() || saving}
                         className="bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2 rounded-xl transition-colors">
                         {saving ? "Saving..." : "Save Changes"}
@@ -236,14 +185,8 @@ function ManageModal({ categories, addCategory, removeCategory, updateCategory, 
 
             <div className="bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4 flex flex-col gap-3">
               <p className="text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">New Category</p>
-              <CatColorForm
-                name={catName} bg={catBg} text={catText} border={catBorder}
-                bgTouched={bgTouched} userEditedText={userEditedText} userEditedBorder={userEditedBorder}
-                onNameChange={setCatName}
-                onBgChange={hex => applyBgSuggest(hex, setCatBg, setCatText, setCatBorder, userEditedText, userEditedBorder, setBgTouched)}
-                onTextChange={v => { setCatText(v); setUserEditedText(true); }}
-                onBorderChange={v => { setCatBorder(v); setUserEditedBorder(true); }}
-              />
+              <ColorPicker name={catName} onNameChange={setCatName} selected={catPreset}
+                open={catColorOpen} onToggle={() => setCatColorOpen(o => !o)} onSelect={setCatPreset} />
               <button onClick={handleAddCat} disabled={!catName.trim() || saving}
                 className="bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 text-[var(--t-on-primary)] text-sm font-semibold py-2 rounded-xl transition-colors">
                 {saving ? "Saving..." : "+ Add Category"}
@@ -322,7 +265,7 @@ function TaskModal({ task, onClose, onSave, onDuplicate, onDelete, categories, t
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Category <span className="text-[var(--t-primary)]">*</span></label>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Category <span className="text-[var(--t-rose-ink)]">*</span></label>
             <div className="flex flex-wrap gap-2">
               {categories.map(c => (
                 <button key={c.name} onClick={()=>toggleCat(c.name)}
@@ -332,7 +275,7 @@ function TaskModal({ task, onClose, onSave, onDuplicate, onDelete, categories, t
                 </button>
               ))}
             </div>
-            {selCats.length === 0 && <p className="text-xs text-[var(--t-primary)] mt-1">Please select at least one category</p>}
+            {selCats.length === 0 && <p className="text-xs text-[var(--t-rose-ink)] mt-1">Please select at least one category</p>}
           </div>
           <div>
             <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Type <span className="normal-case font-normal">(optional)</span></label>
@@ -505,7 +448,7 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
 
           <div>
             <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">
-              Category {isDailyTask ? <span className="normal-case font-normal">(optional)</span> : <span className="text-[var(--t-primary)]">*</span>}
+              Category {isDailyTask ? <span className="normal-case font-normal">(optional)</span> : <span className="text-[var(--t-rose-ink)]">*</span>}
             </label>
             <div className="flex flex-wrap gap-2">
               {categories.length === 0 && <p className="text-xs text-[var(--t-text-muted)]">No categories yet — add some in Manage first!</p>}
@@ -518,7 +461,7 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
               ))}
             </div>
             {!isDailyTask && categories.length > 0 && selCats.length === 0 && (
-              <p className="text-xs text-[var(--t-primary)] mt-1">Please select at least one category</p>
+              <p className="text-xs text-[var(--t-rose-ink)] mt-1">Please select at least one category</p>
             )}
           </div>
 
@@ -582,10 +525,14 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const activeTasks = tasks.filter(t => !t.done).sort((a,b) => {
-    if (sortByCategory) return (a.categories?.[0]||"").localeCompare(b.categories?.[0]||"");
-    return new Date(`${a.due_date}T${a.due_time}:00`) - new Date(`${b.due_date}T${b.due_time}:00`);
-  });
+  const todayKey = new Date().toISOString().split("T")[0];
+  const activeTasks = tasks
+    // Past daily-task instances are handled on the Daily Tasks page — don't clutter the list with missed days
+    .filter(t => !t.done && !(t.daily_task_id && t.due_date < todayKey))
+    .sort((a,b) => {
+      if (sortByCategory) return (a.categories?.[0]||"").localeCompare(b.categories?.[0]||"");
+      return new Date(`${a.due_date}T${a.due_time}:00`) - new Date(`${b.due_date}T${b.due_time}:00`);
+    });
   const completedTasks = tasks.filter(t => t.done);
 
   function handleDuplicate(task) { setDuplicatePrefill(task); setShowAddTask(true); }
@@ -605,27 +552,99 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
   }
 
   const urgencyBar = (raw) => {
-    if (raw < 0)  return "bg-[#C49A8A]";
-    if (raw <= 1) return "bg-[#C4A87A]";
-    if (raw <= 5) return "bg-[#B8BD7A]";
-    return "bg-[#84A87A]";
+    if (raw < 0)  return "#D98A8A";
+    if (raw <= 1) return "#E0B36A";
+    if (raw <= 5) return "#B7C98A";
+    return "#9DB387";
   };
 
+  const todayStr = new Date().toISOString().split("T")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
+  // ── Smart grouping ──────────────────────────────────────────
+  const GROUP_DEFS = [
+    { key: "overdue", label: "Overdue",   emoji: "⏰", ink: "#B5673F", bg: "#F6E5DE", border: "#E7B9A4" },
+    { key: "today",   label: "Today",     emoji: "✦", ink: "var(--rose-deep)", bg: "var(--rose-soft)", border: "var(--border-rose)" },
+    { key: "week",    label: "This Week", emoji: "❀", ink: "var(--sage-deep)", bg: "var(--sage-soft)", border: "var(--border-sage)" },
+    { key: "later",   label: "Later",     emoji: "☽", ink: "#A9852F", bg: "var(--butter-soft)", border: "#EAD08A" },
+  ];
+  function bucketOf(task) {
+    const { raw } = getTimeLeft(task.due_date, task.due_time);
+    if (raw < 0) return "overdue";
+    if (task.due_date === todayStr) return "today";
+    if (raw <= 7) return "week";
+    return "later";
+  }
+
+  let sections;
+  if (sortByCategory) {
+    const byCat = {};
+    activeTasks.forEach(t => { const c = (t.categories?.[0] || "Uncategorized"); (byCat[c] = byCat[c] || []).push(t); });
+    sections = Object.entries(byCat).map(([label, items]) => ({ key: label, label, emoji: "✿", ink: "var(--rose-deep)", bg: "var(--rose-soft)", border: "var(--border-rose)", items }));
+  } else {
+    const buckets = { overdue: [], today: [], week: [], later: [] };
+    activeTasks.forEach(t => buckets[bucketOf(t)].push(t));
+    sections = GROUP_DEFS.map(g => ({ ...g, items: buckets[g.key] })).filter(g => g.items.length > 0);
+  }
+
+  function renderTaskCard(task) {
+    const { value, unit, raw } = getTimeLeft(task.due_date, task.due_time);
+    const isAnimating = animatingOut.includes(task.id);
+    return (
+      <div key={task.id}
+        className={`rounded-2xl overflow-hidden transition-all duration-500 ${isAnimating ? "opacity-25" : "hover:-translate-y-0.5 glow-soft"}`}
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+        <div className="flex items-stretch">
+          <div className="w-1.5 flex-shrink-0" style={{ background: urgencyBar(raw) }} />
+          <div className="flex items-center gap-4 px-4 py-3.5 flex-1 min-w-0">
+            <input type="checkbox" checked={isAnimating || task.done}
+              onChange={() => !isAnimating && handleCheckDone(task.id)}
+              disabled={isAnimating}
+              className="kawaii-checkbox flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div
+                className={`text-sm font-semibold leading-snug ${isAnimating ? "line-through text-[var(--t-text-muted)]" : "text-[var(--t-text-dark)] cursor-pointer hover:text-[var(--rose-deep)]"} transition-colors`}
+                onClick={() => !isAnimating && setSelectedTask(task)}>
+                {task.name}
+                {task.daily_task_id && (
+                  <span className="inline text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 align-middle"
+                    style={{ background: "var(--sage-soft)", color: "var(--sage-deep)" }}>❀ daily</span>
+                )}
+                {task.notes && <span className="text-[10px] ml-1" style={{ color: "var(--t-text-muted)" }}>· 📝</span>}
+              </div>
+              {(task.categories || []).length > 0 && (
+                <div className={`flex flex-wrap gap-1 mt-1.5 ${isAnimating ? "opacity-40" : ""}`}>
+                  {task.categories.map(c => <CategoryPill key={c} cat={c} categories={categories} />)}
+                </div>
+              )}
+            </div>
+            <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${isAnimating ? "line-through text-[var(--t-text-muted)] bg-[var(--t-bg-input)]" : getUrgencyStyle(raw)}`}>
+              {dateMode === "daysLeft"
+                ? (raw < 0 ? `${Math.abs(Math.round(raw * 10) / 10)}d ago` : unit === "min" ? `${value}m` : `${value}d`)
+                : new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--t-bg-page)]">
-      <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="min-h-screen relative">
+      <div className="aura aura-rose" style={{ width: 240, height: 240, top: -40, right: 60 }} />
+      <div className="aura aura-sage" style={{ width: 220, height: 220, bottom: 60, left: -30 }} />
+      <div className="max-w-2xl mx-auto px-6 py-10 relative z-10">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-[11px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.15em] mb-1">{today}</p>
-            <h1 style={lora} className="text-4xl text-[var(--t-text-dark)] leading-tight">My Tasks</h1>
+            <p className="text-[12px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: "var(--sage-deep)" }}>{today}</p>
+            <h1 style={lora} className="text-[44px] text-[var(--t-text-dark)] leading-tight">My Tasks <span style={{ color: "var(--rose)" }}>✿</span></h1>
           </div>
           <div className="flex gap-2 items-center mt-2">
-            <label className="flex items-center gap-1.5 bg-[var(--t-bg-input)] border border-[var(--t-border)] hover:bg-[var(--t-bg-accent)] text-[var(--t-text-med)] text-xs font-semibold px-3.5 py-2 rounded-xl transition-all cursor-pointer">
-              Import
+            <label className="flex items-center gap-1.5 border border-dashed text-xs font-bold px-3.5 py-2 rounded-full transition-all cursor-pointer"
+              style={{ background: "var(--surface)", borderColor: "var(--border-sage)", color: "var(--sage-deep)" }}>
+              ⬆ Import
               <input type="file" accept=".xlsx,.xls,.csv" className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files[0];
@@ -640,11 +659,13 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
                 }} />
             </label>
             <button onClick={() => setShowManage(true)}
-              className="flex items-center gap-1.5 bg-[var(--t-bg-input)] border border-[var(--t-border)] hover:bg-[var(--t-bg-accent)] text-[var(--t-text-med)] text-xs font-semibold px-3.5 py-2 rounded-xl transition-all">
-              Manage
+              className="flex items-center gap-1.5 border border-dashed text-xs font-bold px-3.5 py-2 rounded-full transition-all"
+              style={{ background: "var(--surface)", borderColor: "var(--border-sage)", color: "var(--sage-deep)" }}>
+              ⚙ Manage
             </button>
             <button onClick={() => { setDuplicatePrefill(null); setShowAddTask(true); }}
-              className="flex items-center gap-1.5 bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] text-[var(--t-on-primary)] text-xs font-semibold px-4 py-2 rounded-xl transition-all">
+              className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all glow-rose"
+              style={{ background: "var(--rose)", color: "#fff" }}>
               + Add Task
             </button>
           </div>
@@ -652,80 +673,53 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
 
         {/* ── Sort / view controls ── */}
         <div className="flex items-center gap-2 mb-5">
-          <span className="text-[11px] font-bold text-[var(--t-text-muted)] uppercase tracking-wider mr-1">Sort</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider mr-1" style={{ color: "var(--t-text-muted)" }}>Group by</span>
           <button onClick={() => setSortByCategory(false)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!sortByCategory ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
+            className="text-xs px-3.5 py-1.5 rounded-full border transition-all font-semibold"
+            style={!sortByCategory ? { background: "var(--rose)", color: "#fff", borderColor: "var(--rose)" } : { background: "var(--surface)", color: "var(--t-text-med)", borderColor: "var(--border)" }}>
             Due date
           </button>
           <button onClick={() => setSortByCategory(true)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-all ${sortByCategory ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
+            className="text-xs px-3.5 py-1.5 rounded-full border transition-all font-semibold"
+            style={sortByCategory ? { background: "var(--rose)", color: "#fff", borderColor: "var(--rose)" } : { background: "var(--surface)", color: "var(--t-text-med)", borderColor: "var(--border)" }}>
             Category
           </button>
           <button onClick={() => setDateMode(d => d === "daysLeft" ? "dueDate" : "daysLeft")}
-            className="ml-auto text-[11px] text-[var(--t-text-muted)] hover:text-[var(--t-primary)] transition-colors flex items-center gap-1 font-medium">
-            {dateMode === "daysLeft" ? "Showing days left" : "Showing due date"} <span className="opacity-70">⇄</span>
+            className="ml-auto text-[11px] transition-colors flex items-center gap-1 font-bold" style={{ color: "var(--sage-deep)" }}>
+            {dateMode === "daysLeft" ? "days left" : "due date"} <span className="opacity-70">⇄</span>
           </button>
         </div>
 
-        {/* ── Task cards ── */}
-        <div className="flex flex-col gap-2.5">
-          {activeTasks.length === 0 && (
-            <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl px-6 py-14 text-center">
-              <p className="text-sm text-[var(--t-text-muted)]">No tasks yet — add your first one above!</p>
-            </div>
-          )}
+        {/* ── Grouped task cards ── */}
+        {activeTasks.length === 0 && (
+          <div className="rounded-2xl border border-dashed px-6 py-16 text-center" style={{ background: "var(--surface)", borderColor: "var(--border-rose)" }}>
+            <p className="text-2xl mb-2">🌸</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--t-text-muted)" }}>no tasks here ✿ enjoy your free time!</p>
+          </div>
+        )}
 
-          {activeTasks.map(task => {
-            const { value, unit, raw } = getTimeLeft(task.due_date, task.due_time);
-            const isAnimating = animatingOut.includes(task.id);
-            return (
-              <div key={task.id}
-                className={`bg-[var(--t-bg-card)] rounded-2xl border border-[var(--t-border)] overflow-hidden transition-opacity duration-500 ${isAnimating ? "opacity-25" : "hover:border-[var(--t-border)] hover:shadow-sm"}`}>
-                <div className="flex items-stretch">
-                  {/* Urgency accent bar */}
-                  <div className={`w-1 flex-shrink-0 ${urgencyBar(raw)}`} />
-                  {/* Content */}
-                  <div className="flex items-center gap-4 px-4 py-3.5 flex-1 min-w-0">
-                    {/* Name + pills */}
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className={`text-sm font-medium leading-snug ${isAnimating ? "line-through text-[var(--t-text-muted)]" : "text-[var(--t-text-dark)] cursor-pointer hover:text-[var(--t-primary)]"} transition-colors`}
-                        onClick={() => !isAnimating && setSelectedTask(task)}>
-                        {task.name}
-                        {task.daily_task_id && (
-                          <span className="inline text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 align-middle"
-                            style={{ background: "var(--t-bg-accent)", color: "var(--t-primary)" }}>Daily</span>
-                        )}
-                        {task.notes && <span className="text-[10px] text-[var(--t-text-muted)] ml-1">·</span>}
-                      </div>
-                      {(task.categories || []).length > 0 && (
-                        <div className={`flex flex-wrap gap-1 mt-1.5 ${isAnimating ? "opacity-40" : ""}`}>
-                          {task.categories.map(c => <CategoryPill key={c} cat={c} categories={categories} />)}
-                        </div>
-                      )}
-                    </div>
-                    {/* Date badge */}
-                    <span className={`text-xs px-2.5 py-1 rounded-lg font-medium flex-shrink-0 ${isAnimating ? "line-through text-[var(--t-text-muted)] bg-[var(--t-bg-input)]" : getUrgencyStyle(raw)}`}>
-                      {dateMode === "daysLeft"
-                        ? (raw < 0 ? `${Math.abs(Math.round(raw * 10) / 10)}d ago` : unit === "min" ? `${value}m` : `${value}d`)
-                        : new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                    {/* Checkbox */}
-                    <input type="checkbox" checked={isAnimating || task.done}
-                      onChange={() => !isAnimating && handleCheckDone(task.id)}
-                      disabled={isAnimating}
-                      className="w-4 h-4 accent-[var(--t-primary)] cursor-pointer disabled:cursor-default flex-shrink-0" />
-                  </div>
-                </div>
+        <div className="flex flex-col gap-6">
+          {sections.map(sec => (
+            <div key={sec.key}>
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5"
+                  style={{ background: sec.bg, color: sec.ink, border: `1px solid ${sec.border}` }}>
+                  <span>{sec.emoji}</span>{sec.label}
+                </span>
+                <span className="text-[10px] font-bold" style={{ color: "var(--t-text-muted)" }}>{sec.items.length}</span>
+                <span className="flex-1 divider-soft ml-1" />
               </div>
-            );
-          })}
+              <div className="flex flex-col gap-2.5">
+                {sec.items.map(renderTaskCard)}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* ── Completed section ── */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-2">
-            <button className="flex items-center gap-1.5 text-xs text-[var(--t-text-muted)] hover:text-[var(--t-primary)] transition-colors font-medium"
+            <button className="flex items-center gap-1.5 text-xs text-[var(--t-text-muted)] hover:text-[var(--t-rose-ink)] transition-colors font-medium"
               onClick={() => setShowCompleted(s => !s)}>
               <span className="text-[10px]">{showCompleted ? "▾" : "▸"}</span>
               Completed · {completedTasks.length}
@@ -755,7 +749,7 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
                       {new Date(task.due_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                     <input type="checkbox" checked={task.done} onChange={() => updateTask(task.id, { done: !task.done })}
-                      className="w-4 h-4 accent-[var(--t-primary)] cursor-pointer flex-shrink-0" />
+                      className="kawaii-checkbox flex-shrink-0" />
                   </div>
                 </div>
               ))}

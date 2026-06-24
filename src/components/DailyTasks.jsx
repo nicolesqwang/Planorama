@@ -305,17 +305,21 @@ export default function DailyTasks({
   const todayLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <div className="min-h-screen bg-[var(--t-bg-page)]">
-      <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="min-h-screen relative">
+      <div className="aura aura-sage" style={{ width: 240, height: 240, top: -40, right: 50 }} />
+      <div className="aura aura-rose" style={{ width: 220, height: 220, bottom: 60, left: -30 }} />
+      <div className="max-w-2xl mx-auto px-6 py-10 relative z-10">
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-[11px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.15em] mb-1">{todayLabel}</p>
-            <h1 style={lora} className="text-4xl text-[var(--t-text-dark)] leading-tight">Daily Tasks</h1>
+            <p className="text-[12px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: "var(--sage-deep)" }}>{todayLabel}</p>
+            <h1 style={lora} className="text-[44px] text-[var(--t-text-dark)] leading-tight">Daily Tasks <span style={{ color: "var(--rose)" }}>❀</span></h1>
+            <p className="text-[12px] font-semibold mt-1" style={{ color: "var(--t-text-muted)" }}>tiny habits, big blooms — check in each day ♡</p>
           </div>
           <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] text-[var(--t-on-primary)] text-xs font-semibold px-4 py-2 rounded-xl transition-all mt-2">
+            className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all mt-2 glow-rose"
+            style={{ background: "var(--rose)", color: "#fff" }}>
             + Add Daily Task
           </button>
         </div>
@@ -323,8 +327,9 @@ export default function DailyTasks({
         {/* Active tasks */}
         <div className="flex flex-col gap-3">
           {active.length === 0 && (
-            <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl px-6 py-14 text-center">
-              <p className="text-sm text-[var(--t-text-muted)]">No daily tasks yet — add one above to start a streak!</p>
+            <div className="rounded-2xl border border-dashed px-6 py-16 text-center" style={{ background: "var(--surface)", borderColor: "var(--border-sage)" }}>
+              <p className="text-2xl mb-2">🌱</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--t-text-muted)" }}>no streaks yet ✿ plant one above to get started!</p>
             </div>
           )}
           {active.map(dt => {
@@ -336,22 +341,24 @@ export default function DailyTasks({
 
             return (
               <div key={dt.id}
-                className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl overflow-hidden hover:shadow-sm transition-shadow cursor-pointer"
+                className="rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-transform cursor-pointer glow-soft flex items-stretch"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 onClick={() => setSelectedDt(dt)}>
-                <div className="px-5 py-4 flex items-start gap-4">
+                <div className="w-1.5 flex-shrink-0" style={{ background: checkedToday ? "var(--sage)" : "var(--rose)" }} />
+                <div className="px-5 py-4 flex items-start gap-4 flex-1">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-[var(--t-text-dark)]">{dt.name}</span>
+                      <span className="text-base font-bold text-[var(--t-text-dark)]">{checkedToday ? "🌸" : "🌱"} {dt.name}</span>
                       {dt.category && <CategoryPill cat={dt.category} categories={categories} />}
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: "var(--t-bg-accent)" }}>
+                    <div className="h-2 rounded-full overflow-hidden mb-1.5" style={{ background: "var(--sage-soft)" }}>
                       <div className="h-full rounded-full transition-all duration-500"
-                        style={{ background: "var(--t-primary)", width: `${pct * 100}%` }} />
+                        style={{ background: "linear-gradient(90deg, var(--sage), var(--rose))", width: `${pct * 100}%` }} />
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--t-text-muted)]">
-                      <span>Day {dayNum} of {total}</span>
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--t-text-muted)" }}>
+                      <span style={{ color: "var(--rose-deep)" }}>Day {dayNum} of {total}</span>
                       <span>·</span>
-                      <span>{done} / {total} days</span>
+                      <span>{done} / {total} done</span>
                       <span>·</span>
                       <span>until {fmtDate(dt.end_date)}</span>
                     </div>
@@ -361,9 +368,9 @@ export default function DailyTasks({
                     onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={checkedToday}
                       onChange={() => onToggleCompletion(dt.id)}
-                      className="w-5 h-5 accent-[var(--t-primary)] cursor-pointer"
-                      style={{ opacity: checkedToday ? 0.6 : 1 }} />
-                    <span className="text-[9px] font-medium text-[var(--t-text-muted)]">today</span>
+                      className="kawaii-checkbox"
+                      style={{ width: "22px", height: "22px", opacity: checkedToday ? 0.7 : 1 }} />
+                    <span className="text-[9px] font-bold" style={{ color: "var(--sage-deep)" }}>today</span>
                   </div>
                 </div>
               </div>
@@ -375,7 +382,7 @@ export default function DailyTasks({
         {archived.length > 0 && (
           <div className="mt-8">
             <button onClick={() => setShowArchived(s => !s)}
-              className="flex items-center gap-1.5 text-xs text-[var(--t-text-muted)] hover:text-[var(--t-primary)] transition-colors font-medium mb-3">
+              className="flex items-center gap-1.5 text-xs text-[var(--t-text-muted)] hover:text-[var(--t-rose-ink)] transition-colors font-medium mb-3">
               <span className="text-[10px]">{showArchived ? "▾" : "▸"}</span>
               Completed streaks · {archived.length}
             </button>

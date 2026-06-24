@@ -1,6 +1,5 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "../supabase";
-import { THEMES, generateThemeFromColor } from "../theme";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -49,9 +48,8 @@ function ThemedSelect({ value, onChange, children }) {
   );
 }
 
-export default function Settings({ session, deleteAllCompleted, onSignOut, themeKey, customThemeHex, onThemeChange }) {
+export default function Settings({ session, deleteAllCompleted, onSignOut }) {
   const meta = session?.user?.user_metadata || {};
-  const colorInputRef = useRef(null);
 
   // Profile
   const [firstName, setFirstName] = useState(meta.first_name || "");
@@ -64,7 +62,6 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
   const [pwSaving, setPwSaving] = useState(false);
 
   // Preferences
-  const [defaultPage, setDefaultPage] = useState(() => localStorage.getItem("pref_default_page") || "dashboard");
   const [dateDisplay, setDateDisplay] = useState(() => localStorage.getItem("pref_date_display") || "daysLeft");
   const [prefSaved,   setPrefSaved]   = useState(false);
 
@@ -94,7 +91,6 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
   }
 
   function savePreferences() {
-    localStorage.setItem("pref_default_page", defaultPage);
     localStorage.setItem("pref_date_display", dateDisplay);
     setPrefSaved(true);
     setTimeout(() => setPrefSaved(false), 2500);
@@ -110,10 +106,11 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
   const initials = (firstName[0] || "") + (lastName[0] || "");
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--t-bg-page)" }}>
-      <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="min-h-screen relative">
+      <div className="aura aura-rose" style={{ width: 240, height: 240, top: -40, right: 50 }} />
+      <div className="max-w-2xl mx-auto px-6 py-10 relative z-10">
 
-        <h1 style={{ ...lora, color: "var(--t-text-dark)" }} className="text-4xl leading-tight mb-8">Settings</h1>
+        <h1 style={{ ...lora, color: "var(--t-text-dark)" }} className="text-4xl leading-tight mb-8">Settings <span style={{ color: "var(--rose)" }}>✦</span></h1>
 
         <div className="flex flex-col gap-5">
 
@@ -150,7 +147,7 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
               </button>
               {profileMsg && (
                 <span className={`text-xs font-medium ${profileMsg.startsWith("Error") ? "text-red-500" : ""}`}
-                  style={!profileMsg.startsWith("Error") ? { color: "var(--t-primary)" } : {}}>
+                  style={!profileMsg.startsWith("Error") ? { color: "var(--t-rose-ink)" } : {}}>
                   {profileMsg}
                 </span>
               )}
@@ -173,7 +170,7 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
               </button>
               {pwMsg && (
                 <span className={`text-xs font-medium ${pwMsg.startsWith("Error") ? "text-red-500" : ""}`}
-                  style={!pwMsg.startsWith("Error") ? { color: "var(--t-primary)" } : {}}>
+                  style={!pwMsg.startsWith("Error") ? { color: "var(--t-rose-ink)" } : {}}>
                   {pwMsg}
                 </span>
               )}
@@ -182,13 +179,6 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
 
           {/* ── Preferences ── */}
           <Section title="Preferences">
-            <Field label="Default page on login">
-              <ThemedSelect value={defaultPage} onChange={e => setDefaultPage(e.target.value)}>
-                <option value="dashboard">Dashboard</option>
-                <option value="tasks">Tasks</option>
-                <option value="calendar">Calendar</option>
-              </ThemedSelect>
-            </Field>
             <Field label="Default date display in Tasks">
               <ThemedSelect value={dateDisplay} onChange={e => setDateDisplay(e.target.value)}>
                 <option value="daysLeft">Days remaining (e.g. 3d)</option>
@@ -196,82 +186,15 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
               </ThemedSelect>
             </Field>
 
-            {/* ── Color theme ── */}
-            <Field label="App color theme">
-              <div className="flex flex-wrap gap-2 mt-0.5 items-center">
-                {Object.entries(THEMES).map(([key, t]) => (
-                  <button key={key} onClick={() => onThemeChange(key)}
-                    title={t.name}
-                    className="w-8 h-8 rounded-full transition-all flex items-center justify-center flex-shrink-0"
-                    style={{
-                      background: t.swatch,
-                      border: themeKey === key ? `3px solid ${t.primary}` : `2px solid transparent`,
-                      outline: themeKey === key ? `2px solid ${t.swatch}` : "none",
-                      outlineOffset: "1px",
-                      boxShadow: themeKey === key ? `0 0 0 1px ${t.primary}` : "0 0 0 1px rgba(0,0,0,0.12)",
-                    }}>
-                    {themeKey === key && (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke={t.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="2,6 5,9 10,3"/>
-                      </svg>
-                    )}
-                  </button>
-                ))}
-
-                {/* Custom color picker */}
-                <div className="relative flex-shrink-0">
-                  <button
-                    title="Custom color"
-                    onClick={() => colorInputRef.current?.click()}
-                    className="w-8 h-8 rounded-full transition-all flex items-center justify-center overflow-hidden"
-                    style={{
-                      background: themeKey === "custom"
-                        ? generateThemeFromColor(customThemeHex).swatch
-                        : "conic-gradient(from 0deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #c77dff, #ff6b6b)",
-                      border: themeKey === "custom" ? `3px solid ${generateThemeFromColor(customThemeHex).primary}` : "2px solid transparent",
-                      outline: themeKey === "custom" ? `2px solid ${generateThemeFromColor(customThemeHex).swatch}` : "none",
-                      outlineOffset: "1px",
-                      boxShadow: themeKey === "custom"
-                        ? `0 0 0 1px ${generateThemeFromColor(customThemeHex).primary}`
-                        : "0 0 0 1px rgba(0,0,0,0.18)",
-                    }}>
-                    {themeKey === "custom" ? (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-                        stroke={generateThemeFromColor(customThemeHex).primary}
-                        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="2,6 5,9 10,3"/>
-                      </svg>
-                    ) : (
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"
-                        style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.4))" }}>
-                        <line x1="5.5" y1="1.5" x2="5.5" y2="9.5"/>
-                        <line x1="1.5" y1="5.5" x2="9.5" y2="5.5"/>
-                      </svg>
-                    )}
-                  </button>
-                  <input
-                    ref={colorInputRef}
-                    type="color"
-                    value={themeKey === "custom" ? customThemeHex : "#4A5C35"}
-                    onChange={e => onThemeChange("custom", e.target.value)}
-                    className="absolute inset-0 opacity-0 w-0 h-0 pointer-events-none"
-                  />
-                </div>
-              </div>
-              <p className="text-[11px] mt-1" style={{ color: "var(--t-text-muted)" }}>
-                {themeKey === "custom" ? "Custom color selected" : (THEMES[themeKey]?.name || "Green") + " theme selected"} — applies across the whole app.
-              </p>
-            </Field>
-
             <div className="flex items-center gap-3">
               <button onClick={savePreferences}
-                className="text-sm font-semibold px-5 py-2 rounded-xl transition-colors"
+                className="text-sm font-semibold px-5 py-2 rounded-full transition-colors"
                 style={{ background: "var(--t-primary)", color: "var(--t-on-primary)" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--t-primary-hover)"}
                 onMouseLeave={e => e.currentTarget.style.background = "var(--t-primary)"}>
                 Save Preferences
               </button>
-              {prefSaved && <span className="text-xs font-medium" style={{ color: "var(--t-primary)" }}>Preferences saved!</span>}
+              {prefSaved && <span className="text-xs font-medium" style={{ color: "var(--t-rose-ink)" }}>Preferences saved! ✦</span>}
             </div>
           </Section>
 
@@ -303,12 +226,12 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
                 </div>
               )}
             </div>
-            {clearDone && <p className="text-xs font-medium -mt-1" style={{ color: "var(--t-primary)" }}>All completed tasks cleared.</p>}
+            {clearDone && <p className="text-xs font-medium -mt-1" style={{ color: "var(--t-rose-ink)" }}>All completed tasks cleared. ✿</p>}
 
             <div className="pt-4 flex items-center justify-between" style={{ borderTop: "1px solid var(--t-bg-accent)" }}>
               <div>
                 <p className="text-sm font-semibold" style={{ color: "var(--t-text-dark)" }}>Sign out</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--t-text-muted)" }}>Sign out of your Planorama account.</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--t-text-muted)" }}>Sign out of your bloomtasks account.</p>
               </div>
               <button onClick={onSignOut}
                 className="text-sm font-semibold transition-colors px-4 py-2 rounded-xl border flex-shrink-0"
@@ -350,7 +273,7 @@ export default function Settings({ session, deleteAllCompleted, onSignOut, theme
           {/* ── About ── */}
           <Section title="About">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium" style={{ color: "var(--t-text-med)" }}>Planorama</span>
+              <span className="font-medium" style={{ color: "var(--t-text-med)" }}>bloomtasks</span>
               <span className="text-xs" style={{ color: "var(--t-text-muted)" }}>v1.0.0</span>
             </div>
             <p className="text-xs leading-relaxed" style={{ color: "var(--t-text-muted)" }}>

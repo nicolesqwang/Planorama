@@ -61,6 +61,22 @@ export function generateThemeFromColor(hex) {
 
 // ── Preset themes ────────────────────────────────────────────────
 export const THEMES = {
+  bloom: {
+    name: "Bloom",
+    swatch: "#E3A6BB",
+    primary: "#E3A6BB",
+    primaryHover: "#B5677F",
+    onPrimary: "#5A3A42",
+    bgPage: "#FBF7EF",
+    bgCard: "#FFFDF8",
+    bgInput: "#FBF7EF",
+    bgAccent: "#E9ECD9",
+    border: "#EADFCE",
+    textDark: "#463A40",
+    textMed: "#7C6A72",
+    textMuted: "#A99CA2",
+    roseInk: "#B5677F",
+  },
   green: {
     name: "Green",
     swatch: "#4A5C35",
@@ -183,7 +199,7 @@ export const THEMES = {
   },
 };
 
-export const DEFAULT_THEME_KEY = "green";
+export const DEFAULT_THEME_KEY = "bloom";
 
 function applyThemeObj(theme) {
   const root = document.documentElement;
@@ -198,8 +214,9 @@ function applyThemeObj(theme) {
   root.style.setProperty("--t-text-dark",      theme.textDark);
   root.style.setProperty("--t-text-med",       theme.textMed);
   root.style.setProperty("--t-text-muted",     theme.textMuted);
+  root.style.setProperty("--t-rose-ink",       theme.roseInk || theme.primary);
 }
 
 export function applyTheme(themeKey, overrideTheme = null) {
-  applyThemeObj(overrideTheme || THEMES[themeKey] || THEMES.green);
+  applyThemeObj(overrideTheme || THEMES[themeKey] || THEMES.bloom);
 }

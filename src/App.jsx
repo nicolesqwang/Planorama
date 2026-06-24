@@ -7,7 +7,7 @@ import TaskList from "./components/TaskList";
 import DailyTasks from "./components/DailyTasks";
 import Pomodoro from "./components/Pomodoro";
 import Settings from "./components/Settings";
-import { DEFAULT_THEME_KEY, applyTheme, generateThemeFromColor } from "./theme";
+import { DEFAULT_THEME_KEY, applyTheme } from "./theme";
 
 const DEFAULT_TASK_TYPES  = ["HW", "Study", "Project", "Exam", "Presentation", "Review"];
 const DEFAULT_EVENT_TYPES = ["Meeting", "Social", "Workshop", "Event", "Office Hours", "Club"];
@@ -211,26 +211,13 @@ export default function App() {
   const [taskTypes, setTTState]    = useState([]);
   const [eventTypes, setETState]   = useState([]);
   const [pomodoroColor, setPomodoroColor] = useState(null);
-  const [themeKey, setThemeKey] = useState(DEFAULT_THEME_KEY);
-  const [customThemeHex, setCustomThemeHex] = useState("#4A5C35");
   const [dailyTasks, setDailyTasks] = useState([]);
   const [dailyTaskCompletions, setDailyCompletions] = useState([]);
 
   useEffect(() => {
+    applyTheme(DEFAULT_THEME_KEY);
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session); setLoading(false);
-      if (session) {
-        const meta  = session.user?.user_metadata || {};
-        const saved = meta.theme_key || DEFAULT_THEME_KEY;
-        const hex   = meta.custom_theme_hex || "#4A5C35";
-        setThemeKey(saved);
-        setCustomThemeHex(hex);
-        if (saved === "custom") {
-          applyTheme("custom", generateThemeFromColor(hex));
-        } else {
-          applyTheme(saved);
-        }
-      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setSession(session);
@@ -238,18 +225,6 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  async function handleThemeChange(key, hex = null) {
-    setThemeKey(key);
-    if (key === "custom" && hex) {
-      setCustomThemeHex(hex);
-      applyTheme("custom", generateThemeFromColor(hex));
-      await supabase.auth.updateUser({ data: { theme_key: "custom", custom_theme_hex: hex } });
-    } else {
-      applyTheme(key);
-      await supabase.auth.updateUser({ data: { theme_key: key } });
-    }
-  }
 
   useEffect(() => { if (session) loadAll(); }, [session]);
 
@@ -572,151 +547,101 @@ export default function App() {
 
   const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
-  const headerBg     = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.5) : "var(--t-bg-input)";
-  const headerBorder = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.7) : "var(--t-border)";
+  const headerBg     = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.5) : "var(--surface)";
+  const headerBorder = page === "pomodoro" && pomodoroColor ? blendWithWhite(pomodoroColor, 0.7) : "var(--border)";
 
   const NAV_MAIN = [
-    {
-      id: "dashboard", label: "Dashboard",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1.5" y="1.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="1.5" width="5" height="5" rx="1.2"/>
-          <rect x="1.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/>
-        </svg>
-      ),
-    },
-    {
-      id: "tasks", label: "Tasks", badge: activeTasks.length || null,
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-          <line x1="2" y1="4.5" x2="14" y2="4.5"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="11.5" x2="14" y2="11.5"/>
-        </svg>
-      ),
-    },
-    {
-      id: "calendar", label: "Calendar",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1.5" y="2.5" width="13" height="12" rx="1.5"/>
-          <line x1="5" y1="1.5" x2="5" y2="4"/><line x1="11" y1="1.5" x2="11" y2="4"/>
-          <line x1="1.5" y1="6.5" x2="14.5" y2="6.5"/>
-        </svg>
-      ),
-    },
-    {
-      id: "daily-tasks", label: "Daily Tasks", badge: uncompletedDailyCount || null,
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1.5" y="2.5" width="13" height="12" rx="1.5"/>
-          <line x1="5" y1="1.5" x2="5" y2="4"/><line x1="11" y1="1.5" x2="11" y2="4"/>
-          <line x1="1.5" y1="6.5" x2="14.5" y2="6.5"/>
-          <polyline points="5,10.5 7,12.5 11,8.5"/>
-        </svg>
-      ),
-    },
+    { id: "dashboard",   label: "Dashboard",    icon: "✦" },
+    { id: "calendar",    label: "Calendar",     icon: "☽" },
+    { id: "tasks",       label: "Tasks",        icon: "✿", badge: activeTasks.length || null },
+    { id: "daily-tasks", label: "Daily Tasks",  icon: "❀", badge: uncompletedDailyCount || null },
   ];
   const NAV_TOOLS = [
-    {
-      id: "pomodoro", label: "Pomodoro",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-          <circle cx="8" cy="8" r="5.5"/><line x1="8" y1="8" x2="8" y2="4.5"/><line x1="8" y1="8" x2="11" y2="9.5"/>
-        </svg>
-      ),
-    },
+    { id: "pomodoro", label: "Pomodoro", icon: "◌" },
   ];
 
+  const navStyle = (active) => active
+    ? { background: "var(--surface)", color: "var(--rose-deep)", boxShadow: "inset 3px 0 0 var(--rose), 0 4px 14px -8px rgba(197,111,132,0.45)" }
+    : {};
+  const navIconColor = (active) => active ? "var(--rose-deep)" : "var(--sage-deep)";
+
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--t-bg-page)" }}>
-      <div className="text-sm font-medium" style={{ color: "var(--t-text-muted)" }}>Loading...</div>
+    <div className="min-h-screen flex items-center justify-center bg-bloom">
+      <div className="text-sm font-medium" style={{ color: "var(--t-text-muted)" }}>blooming… ✿</div>
     </div>
   );
 
   if (!session) return <Landing />;
 
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--t-bg-page)" }}>
+    <div className="min-h-screen flex bg-bloom relative">
 
       {/* ── Sidebar ────────────────────────────────────────────── */}
-      <aside className="w-[196px] fixed left-0 top-0 h-full flex flex-col z-30 transition-colors duration-500"
-        style={{ background: headerBg, borderRight: `1px solid ${headerBorder}` }}>
+      <aside className="w-[200px] fixed left-0 top-0 h-full flex flex-col z-30 overflow-hidden"
+        style={{ background: "var(--cream-2)", borderRight: `1px solid var(--border)` }}>
 
         {/* Logo */}
-        <div className="px-4 h-[58px] flex items-center flex-shrink-0" style={{ borderBottom: `1px solid ${headerBorder}` }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "var(--t-border)" }}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                <circle cx="6.5" cy="6.5" r="2" fill="var(--t-primary)"/>
-                <circle cx="6.5" cy="1.5" r="1.1" fill="var(--t-primary)"/>
-                <circle cx="6.5" cy="11.5" r="1.1" fill="var(--t-primary)"/>
-                <circle cx="1.5" cy="6.5" r="1.1" fill="var(--t-primary)"/>
-                <circle cx="11.5" cy="6.5" r="1.1" fill="var(--t-primary)"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ ...lora, color: "var(--t-primary)" }} className="text-[15px] leading-tight">Planorama</div>
-              <div className="text-[9px] font-medium mt-0.5" style={{ color: "var(--t-text-muted)" }}>your personal planner</div>
-            </div>
-          </div>
+        <div className="px-4 pt-5 pb-3 flex-shrink-0 relative" style={{ borderBottom: `1px solid var(--border)` }}>
+          <div style={{ ...lora, color: "var(--rose-deep)" }} className="text-[21px] leading-tight">bloomtasks ✿</div>
+          <div className="text-[9.5px] font-semibold mt-0.5" style={{ color: "var(--sage-deep)" }}>your cozy planner</div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
-          <p className="text-[9px] font-bold uppercase tracking-[0.7px] px-2 mb-1.5" style={{ color: "var(--t-text-muted)" }}>Main</p>
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto relative z-10">
+          <p className="text-[9px] font-bold uppercase tracking-[1px] px-2 mb-1.5 flex items-center gap-1" style={{ color: "var(--t-text-muted)" }}>
+            <span style={{ color: "var(--sage)" }}>🌿</span> Main
+          </p>
           {NAV_MAIN.map(item => (
             <button key={item.id} onClick={() => { setPage(item.id); if (item.id !== "pomodoro") setPomodoroColor(null); }}
-              style={page === item.id ? { background: "var(--t-primary)", color: "var(--t-on-primary)" } : {}}
-              className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
+              style={navStyle(page === item.id)}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-[8px] rounded-[12px] text-[13px] font-semibold transition-all text-left ${
                 page === item.id ? "" : "nav-item-inactive"
               }`}>
-              <span className="flex-shrink-0">{item.icon}</span>
+              <span className="flex-shrink-0 w-4 text-center text-[13px]" style={{ color: navIconColor(page === item.id) }}>{item.icon}</span>
               <span>{item.label}</span>
               {item.badge && (
                 <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={page === item.id
-                    ? { background: "var(--t-bg-accent)", color: "var(--t-primary)" }
-                    : { background: "var(--t-border)", color: "var(--t-primary)" }}>
+                  style={{ background: "var(--rose-soft)", color: "var(--rose-deep)" }}>
                   {item.badge}
                 </span>
               )}
             </button>
           ))}
-          <p className="text-[9px] font-bold uppercase tracking-[0.7px] px-2 mt-4 mb-1.5" style={{ color: "var(--t-text-muted)" }}>Tools</p>
+          <p className="text-[9px] font-bold uppercase tracking-[1px] px-2 mt-4 mb-1.5 flex items-center gap-1" style={{ color: "var(--t-text-muted)" }}>
+            <span style={{ color: "var(--butter)" }}>✦</span> Tools
+          </p>
           {NAV_TOOLS.map(item => (
             <button key={item.id} onClick={() => { setPage(item.id); if (item.id !== "pomodoro") setPomodoroColor(null); }}
-              style={page === item.id ? { background: "var(--t-primary)", color: "var(--t-on-primary)" } : {}}
-              className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
+              style={navStyle(page === item.id)}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-[8px] rounded-[12px] text-[13px] font-semibold transition-all text-left ${
                 page === item.id ? "" : "nav-item-inactive"
               }`}>
-              <span className="flex-shrink-0">{item.icon}</span>
+              <span className="flex-shrink-0 w-4 text-center text-[13px]" style={{ color: navIconColor(page === item.id) }}>{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
         </nav>
 
         {/* Settings + User card */}
-        <div className="px-3 pb-4 pt-3 flex flex-col gap-2" style={{ borderTop: `1px solid ${headerBorder}` }}>
+        <div className="px-3 pb-4 pt-3 flex flex-col gap-2 flex-shrink-0" style={{ borderTop: `1px solid var(--border)` }}>
           <button onClick={() => { setPage("settings"); setPomodoroColor(null); }}
-            style={page === "settings" ? { background: "var(--t-primary)", color: "var(--t-on-primary)" } : {}}
-            className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-[10px] text-[12.5px] font-medium transition-all text-left ${
+            style={navStyle(page === "settings")}
+            className={`flex items-center gap-2.5 w-full px-2.5 py-[8px] rounded-[12px] text-[13px] font-semibold transition-all text-left ${
               page === "settings" ? "" : "nav-item-inactive"
             }`}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="8" cy="8" r="2.2"/>
-              <path d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85"/>
-            </svg>
+            <span className="flex-shrink-0 w-4 text-center text-[13px]" style={{ color: navIconColor(page === "settings") }}>⚙</span>
             <span>Settings</span>
           </button>
-          <div className="rounded-xl p-2.5 flex items-center gap-2" style={{ background: "var(--t-bg-accent)" }}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--t-primary)" }}>
-              <span className="text-[9px] font-bold" style={{ color: "var(--t-on-primary)" }}>{initials}</span>
+          <div className="rounded-2xl p-2.5 flex items-center gap-2 glow-sage" style={{ background: "var(--sage-soft)" }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--rose)" }}>
+              <span className="text-[10px] font-bold" style={{ color: "#fff" }}>{initials}</span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11.5px] font-bold leading-tight truncate" style={{ color: "var(--t-text-dark)" }}>{displayName}</p>
-              <p className="text-[9px] truncate" style={{ color: "var(--t-text-muted)" }}>{session.user.email}</p>
+              <p className="text-[9px] truncate" style={{ color: "var(--sage-deep)" }}>{session.user.email}</p>
             </div>
             <button onClick={handleSignOut}
-              className="text-[8.5px] transition-colors flex-shrink-0 font-semibold" style={{ color: "var(--t-text-muted)" }}>
+              className="text-[8.5px] transition-colors flex-shrink-0 font-bold" style={{ color: "var(--rose-deep)" }}>
               Sign out
             </button>
           </div>
@@ -724,18 +649,18 @@ export default function App() {
       </aside>
 
       {/* ── Main area ──────────────────────────────────────────── */}
-      <div className="ml-[196px] flex-1 flex flex-col min-h-screen">
+      <div className="ml-[200px] flex-1 flex flex-col min-h-screen relative z-10">
 
         {/* Topbar */}
-        <header className="px-7 h-[58px] flex items-center justify-between sticky top-0 z-20 flex-shrink-0 transition-colors duration-500"
+        <header className="px-7 h-[64px] flex items-center justify-between sticky top-0 z-20 flex-shrink-0 transition-colors duration-500"
           style={{ background: headerBg, borderBottom: `1px solid ${headerBorder}` }}>
           <div>
-            <p style={{ ...lora, color: "var(--t-text-dark)" }} className="text-base leading-snug">
-              {timeGreeting}, {displayName}
+            <p style={{ ...lora, color: "var(--t-text-dark)" }} className="text-[19px] leading-snug">
+              {timeGreeting}, {displayName} <span style={{ color: "var(--rose-deep)" }}>✦</span>
             </p>
-            <p className="text-[10.5px] font-medium mt-0.5" style={{ color: "var(--t-text-muted)" }}>
+            <p className="text-[11px] font-semibold mt-0.5" style={{ color: "var(--t-text-muted)" }}>
               {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-              {activeTasks.length > 0 && <span className="ml-1">· {activeTasks.length} task{activeTasks.length !== 1 ? "s" : ""} remaining</span>}
+              {activeTasks.length > 0 && <span className="ml-1" style={{ color: "var(--rose-deep)" }}>· {activeTasks.length} task{activeTasks.length !== 1 ? "s" : ""} remaining</span>}
             </p>
           </div>
         </header>
@@ -772,8 +697,7 @@ export default function App() {
               onUpdateDailyTask={updateDailyTask} onDeleteDailyTask={deleteDailyTask} />
           )}
           {page === "settings" && (
-            <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut}
-              themeKey={themeKey} customThemeHex={customThemeHex} onThemeChange={handleThemeChange} />
+            <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut} />
           )}
         </main>
       </div>
