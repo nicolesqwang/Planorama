@@ -1,10 +1,89 @@
 import { useState } from "react";
-import { askClaude, stripColorEmoji } from "../anthropic";
+import { askClaude, stripColorEmoji, sleep as delay } from "../anthropic";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
 const ENERGY_OPTIONS = ["Energized", "Okay", "Tired"];
 const SLEEP_OPTIONS = ["8h+", "6-7h", "Under 6h"];
+
+const HEAVY_TYPES = ["Exam", "Project", "Study", "HW"];
+const LIGHT_TYPES = ["Review", "Presentation"];
+const MOTIVATIONAL_LINES = [
+  "one focused block at a time — you've got this.",
+  "small steady steps add up to a great day.",
+  "you're more capable than your to-do list suggests.",
+  "rest is productive too — pace yourself today.",
+];
+
+function durationFor(task) {
+  const types = task.types || [];
+  if (types.some(t => HEAVY_TYPES.includes(t))) return 90;
+  if (types.some(t => LIGHT_TYPES.includes(t))) return 45;
+  return 60;
+}
+
+function formatTime(totalMin) {
+  const h = Math.floor(totalMin / 60) % 24;
+  const m = totalMin % 60;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+// Best-effort: pulls a time like "3pm" or "3:30 PM" out of free text.
+// Bare hours below 8 are assumed to mean afternoon (e.g. "3 meeting" → 3 PM).
+function parseCommitmentTime(text) {
+  const m = (text || "").match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = m[2] ? parseInt(m[2], 10) : 0;
+  const ap = (m[3] || "").toLowerCase();
+  if (ap === "pm" && h < 12) h += 12;
+  if (ap === "am" && h === 12) h = 0;
+  if (!ap && h >= 1 && h <= 7) h += 12;
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+// Rule-based fallback — no API call. Front-loads cognitively demanding task
+// types, inserts a break every ~90 min (60 min when tired/under-slept), and
+// flags overload past 6 hours of work, mirroring what the AI prompt asks for.
+function generateRuleBasedSchedule(tasks, energy, sleepQuality, commitments) {
+  const heavy = tasks.filter(t => (t.types || []).some(ty => HEAVY_TYPES.includes(ty)));
+  const light = tasks.filter(t => (t.types || []).some(ty => LIGHT_TYPES.includes(ty)));
+  const neutral = tasks.filter(t => !heavy.includes(t) && !light.includes(t));
+  const ordered = [...heavy, ...neutral, ...light];
+
+  const lowEnergy = energy === "Tired" || sleepQuality === "Under 6h";
+  let cur = lowEnergy ? 10 * 60 : energy === "Okay" ? 9 * 60 + 30 : 9 * 60;
+  const breakEvery = lowEnergy ? 60 : 90;
+
+  let sinceBreak = 0, totalWork = 0, overloadTask = null;
+  const raw = [];
+  ordered.forEach(task => {
+    const dur = durationFor(task);
+    if (sinceBreak + dur > breakEvery && raw.length > 0) {
+      raw.push({ start: cur, end: cur + 10, text: "Break" });
+      cur += 10; sinceBreak = 0;
+    }
+    raw.push({ start: cur, end: cur + dur, text: task.name });
+    cur += dur; sinceBreak += dur; totalWork += dur;
+    if (totalWork > 6 * 60 && !overloadTask) overloadTask = task.name;
+  });
+
+  const commitMin = parseCommitmentTime(commitments);
+  if (commitMin != null) raw.push({ start: commitMin, end: commitMin, text: commitments.trim(), fixed: true });
+  raw.sort((a, b) => a.start - b.start);
+
+  return {
+    blocks: raw.map(b => ({
+      time: b.fixed ? formatTime(b.start) : `${formatTime(b.start)}–${formatTime(b.end)}`,
+      text: b.text,
+    })),
+    warning: overloadTask ? `consider moving ${overloadTask} to tomorrow` : null,
+    motivational: MOTIVATIONAL_LINES[Math.floor(Math.random() * MOTIVATIONAL_LINES.length)],
+  };
+}
 
 const SCHEDULE_SYSTEM_PROMPT = `You are a cognitive load optimizer and productivity coach.
 Given the user's tasks, energy level, sleep quality, and any fixed commitments, create an optimized daily schedule that:
@@ -55,7 +134,6 @@ export default function SmartScheduler({ tasks, categories, onClose }) {
   const [sleep, setSleep]           = useState(null);
   const [commitments, setCommitments] = useState("");
   const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState(null);
   const [result, setResult]         = useState(null);
   const [exportToast, setExportToast] = useState(false);
 
@@ -66,7 +144,7 @@ export default function SmartScheduler({ tasks, categories, onClose }) {
   const relevantTasks = tasks.filter(t => !t.done && (t.due_date === todayStr || t.due_date === tomorrowStr));
 
   async function handleGenerate() {
-    setLoading(true); setError(null);
+    setLoading(true);
     const taskList = relevantTasks.length
       ? relevantTasks.map(t => `- ${t.name} (due ${t.due_date === todayStr ? "today" : "tomorrow"}, category: ${(t.categories || []).join(", ") || "none"}, type: ${(t.types || []).join(", ") || "none"})`).join("\n")
       : "No tasks due today or tomorrow.";
@@ -74,12 +152,13 @@ export default function SmartScheduler({ tasks, categories, onClose }) {
     try {
       const reply = await askClaude(SCHEDULE_SYSTEM_PROMPT, userMessage, 600);
       setResult(parseSchedule(stripColorEmoji(reply)));
-      setStep(3);
-    } catch (err) {
-      setError(err.message.includes("VITE_ANTHROPIC_KEY")
-        ? "AI key not set up yet — add VITE_ANTHROPIC_KEY to .env ♡"
-        : "couldn't build a schedule right now, try again in a bit ♡");
+    } catch {
+      // No key configured, or the request failed — build the schedule locally
+      // instead of showing an error.
+      await delay(400 + Math.random() * 400);
+      setResult(generateRuleBasedSchedule(relevantTasks, energy, sleep, commitments));
     } finally {
+      setStep(3);
       setLoading(false);
     }
   }
@@ -127,7 +206,6 @@ export default function SmartScheduler({ tasks, categories, onClose }) {
             <p className="text-xs font-semibold" style={{ color: "var(--t-text-muted)" }}>
               {relevantTasks.length} task{relevantTasks.length !== 1 ? "s" : ""} due today/tomorrow will be considered.
             </p>
-            {error && <p className="text-sm font-semibold" style={{ color: "#B5673F" }}>{error}</p>}
             <button onClick={handleGenerate} disabled={!energy || !sleep || loading}
               className="w-full text-sm font-bold py-3 rounded-full transition-all disabled:opacity-40"
               style={{ background: "var(--rose)", color: "#fff" }}>

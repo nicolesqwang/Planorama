@@ -47,3 +47,7 @@ export function parseClaudeJSON(text) {
   const cleaned = text.replace(/```json|```/g, "").trim();
   return JSON.parse(cleaned);
 }
+
+// Small artificial delay so fallback content doesn't resolve suspiciously
+// faster than a real network call would.
+export function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

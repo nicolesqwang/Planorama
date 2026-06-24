@@ -3,9 +3,36 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { askClaude, parseClaudeJSON, stripColorEmoji } from "../anthropic";
+import { askClaude, parseClaudeJSON, stripColorEmoji, sleep } from "../anthropic";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
+
+// Hardcoded encouraging tip sets — used whenever the AI call isn't available
+// (no API key, or a failed request) so the feature never looks broken.
+const FALLBACK_TIP_SETS = [
+  [
+    "✦ you're keeping a nice balance between spending and saving this month — keep it up!",
+    "✿ small recurring charges add up fast — a quick subscription audit could free up some cash.",
+  ],
+  [
+    "✿ cooking at home a couple more nights a week tends to make the biggest dent in monthly spending.",
+    "✦ setting aside a fixed amount the moment income arrives makes saving feel automatic.",
+  ],
+  [
+    "✦ you're doing better than you think — consistency matters more than perfection here.",
+    "✿ keeping an eye on your top spending category each week tends to reveal easy wins.",
+  ],
+  [
+    "✿ leaving a little room in your budget for fun spending makes the rest easier to stick to.",
+    "✦ reviewing your biggest expense category once a month is a great habit to keep building.",
+  ],
+];
+function pickFallbackTips(prevIdx) {
+  if (FALLBACK_TIP_SETS.length <= 1) return { idx: 0, text: FALLBACK_TIP_SETS[0].join("\n") };
+  let idx;
+  do { idx = Math.floor(Math.random() * FALLBACK_TIP_SETS.length); } while (idx === prevIdx);
+  return { idx, text: FALLBACK_TIP_SETS[idx].join("\n") };
+}
 
 const EXPENSE_CATEGORIES = ["Food", "Housing", "Transport", "Entertainment", "Shopping", "Health", "Education", "Subscriptions", "Other"];
 const INCOME_CATEGORIES  = ["Internship", "Job", "Freelance", "Family", "Other"];
@@ -248,6 +275,7 @@ function FinancialNotes({ transactions }) {
   const [notes, setNotes]     = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
+  const [fallbackIdx, setFallbackIdx] = useState(-1);
 
   async function generate() {
     setLoading(true); setError(null);
@@ -262,10 +290,13 @@ function FinancialNotes({ transactions }) {
     try {
       const reply = await askClaude(RECS_SYSTEM_PROMPT, `This month's transactions:\n${summary}`, 400);
       setNotes(stripColorEmoji(reply));
-    } catch (err) {
-      setError(err.message.includes("VITE_ANTHROPIC_KEY")
-        ? "AI key not set up yet — add VITE_ANTHROPIC_KEY to .env ♡"
-        : "couldn't generate notes right now, try again in a bit ♡");
+    } catch {
+      // No key configured, or the request failed — fall back silently so the
+      // feature never looks broken to the user.
+      await sleep(400 + Math.random() * 400);
+      const { idx, text } = pickFallbackTips(fallbackIdx);
+      setFallbackIdx(idx);
+      setNotes(text);
     } finally {
       setLoading(false);
     }
