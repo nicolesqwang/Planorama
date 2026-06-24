@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SmartScheduler from "./SmartScheduler";
 
 const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -549,6 +550,7 @@ export default function Dashboard({
   const [selectedItem, setSelectedItem]     = useState(null);
   const [showAddTask, setShowAddTask]       = useState(false);
   const [showAddEvent, setShowAddEvent]     = useState(false);
+  const [showScheduler, setShowScheduler]   = useState(false);
   const [statModal, setStatModal]           = useState(null);
   const [statDetailItem, setStatDetailItem] = useState(null);
 
@@ -592,6 +594,13 @@ export default function Dashboard({
             style={{ background: "var(--surface)", borderColor: "var(--border-sage)", color: "var(--sage-deep)" }}>
             + Event
           </button>
+          {!calendarOnly && (
+            <button onClick={() => setShowScheduler(true)}
+              className="text-[13px] font-bold px-4 py-2 rounded-full transition-all border-[1.5px]"
+              style={{ background: "var(--butter-soft)", borderColor: "#EAD08A", color: "#8A6E2E" }}>
+              Optimize My Day ✦
+            </button>
+          )}
           {!calendarOnly && (
             <div className="flex items-center gap-1 rounded-full p-1 ml-1 border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               {[["calendar","Calendar"],["list","List"]].map(([id,label]) => (
@@ -657,6 +666,7 @@ export default function Dashboard({
       {showAddTask && <AddTaskModal onClose={() => setShowAddTask(false)} onAdd={addTask} categories={categories} taskTypes={taskTypes} />}
       {showAddEvent && <AddEventModal onClose={() => setShowAddEvent(false)} onAdd={addEvent}
         categories={categories} eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType} />}
+      {showScheduler && <SmartScheduler tasks={tasks} categories={categories} onClose={() => setShowScheduler(false)} />}
     </div>
   );
 }

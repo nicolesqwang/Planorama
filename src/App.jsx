@@ -7,6 +7,7 @@ import TaskList from "./components/TaskList";
 import DailyTasks from "./components/DailyTasks";
 import Pomodoro from "./components/Pomodoro";
 import Settings from "./components/Settings";
+import Finances from "./components/Finances";
 import { DEFAULT_THEME_KEY, applyTheme } from "./theme";
 
 const DEFAULT_TASK_TYPES  = ["HW", "Study", "Project", "Exam", "Presentation", "Review"];
@@ -213,6 +214,7 @@ export default function App() {
   const [pomodoroColor, setPomodoroColor] = useState(null);
   const [dailyTasks, setDailyTasks] = useState([]);
   const [dailyTaskCompletions, setDailyCompletions] = useState([]);
+  const [transactions, setTransactionsState] = useState([]);
 
   useEffect(() => {
     applyTheme(DEFAULT_THEME_KEY);
@@ -221,7 +223,7 @@ export default function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setSession(session);
-      if (!session) { setTasksState([]); setEventsState([]); setCatsState([]); setTTState([]); setETState([]); setDailyTasks([]); setDailyCompletions([]); }
+      if (!session) { setTasksState([]); setEventsState([]); setCatsState([]); setTTState([]); setETState([]); setDailyTasks([]); setDailyCompletions([]); setTransactionsState([]); }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -230,7 +232,7 @@ export default function App() {
 
   async function loadAll() {
   const uid = session.user.id;
-  const [t, e, c, tt, et, dt, dc] = await Promise.all([
+  const [t, e, c, tt, et, dt, dc, tx] = await Promise.all([
     supabase.from("tasks").select("*").eq("user_id", uid).order("due_date"),
     supabase.from("events").select("*").eq("user_id", uid).order("date"),
     supabase.from("categories").select("*").eq("user_id", uid),
@@ -238,12 +240,14 @@ export default function App() {
     supabase.from("event_types").select("*").eq("user_id", uid),
     supabase.from("daily_tasks").select("*").eq("user_id", uid).order("created_at"),
     supabase.from("daily_task_completions").select("*").eq("user_id", uid),
+    supabase.from("transactions").select("*").eq("user_id", uid).order("date", { ascending: false }),
   ]);
   setTasksState(t.data || []);
   setEventsState(e.data || []);
   setCatsState(c.data || []);
   setDailyTasks(dt.data || []);
   setDailyCompletions(dc.data || []);
+  setTransactionsState(tx.data || []);
 
   if ((tt.data || []).length === 0) {
     const rows = DEFAULT_TASK_TYPES.map(name => ({ user_id: uid, name }));
@@ -280,6 +284,21 @@ export default function App() {
       done: task.done || false, notes: task.notes
     }).select().single();
     if (!error) setTasksState(p => [...p, data]);
+  }
+
+  async function addTransaction(tx) {
+    const { data, error } = await supabase.from("transactions").insert({
+      user_id: session.user.id, amount: tx.amount, type: tx.type,
+      category: tx.category, description: tx.description || "", date: tx.date,
+    }).select().single();
+    if (error) throw new Error(error.message);
+    setTransactionsState(p => [data, ...p]);
+    return data;
+  }
+
+  async function deleteTransaction(id) {
+    await supabase.from("transactions").delete().eq("id", id);
+    setTransactionsState(p => p.filter(t => t.id !== id));
   }
 
   async function updateTask(id, updates) {
@@ -558,6 +577,7 @@ export default function App() {
   ];
   const NAV_TOOLS = [
     { id: "pomodoro", label: "Pomodoro", icon: "◌" },
+    { id: "finances", label: "Finances", icon: "◈" },
   ];
 
   const navStyle = (active) => active
@@ -695,6 +715,9 @@ export default function App() {
               dailyTaskInstances={tasks.filter(t => t.daily_task_id)}
               categories={normCats} onAddDailyTask={addDailyTask} onToggleCompletion={toggleDailyCompletion}
               onUpdateDailyTask={updateDailyTask} onDeleteDailyTask={deleteDailyTask} />
+          )}
+          {page === "finances" && (
+            <Finances transactions={transactions} addTransaction={addTransaction} deleteTransaction={deleteTransaction} />
           )}
           {page === "settings" && (
             <Settings session={session} deleteAllCompleted={deleteAllCompleted} onSignOut={handleSignOut} />
