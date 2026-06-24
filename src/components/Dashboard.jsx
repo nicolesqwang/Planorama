@@ -567,8 +567,8 @@ export default function Dashboard({
 
   const STAT_CONFIG = [
     { key: "week",      label: "Due This Week", emoji: "✿", items: weekItems,          bg: "var(--rose-soft)",   border: "var(--border-rose)", ink: "var(--rose-deep)" },
-    { key: "overdue",   label: "Overdue",        emoji: "⏰", items: overdueItems,       bg: "#F6E5DE",            border: "#E7B9A4",            ink: "#B5673F" },
-    { key: "completed", label: "Completed",      emoji: "🌿", items: completedItems,     bg: "var(--sage-soft)",   border: "var(--border-sage)", ink: "var(--sage-deep)" },
+    { key: "overdue",   label: "Overdue",        emoji: "✕", items: overdueItems,       bg: "#F6E5DE",            border: "#E7B9A4",            ink: "#B5673F" },
+    { key: "completed", label: "Completed",      emoji: "❀", items: completedItems,     bg: "var(--sage-soft)",   border: "var(--border-sage)", ink: "var(--sage-deep)" },
     { key: "events",    label: "Events",         emoji: "✦", items: upcomingEventItems, bg: "var(--butter-soft)", border: "#EAD08A",            ink: "#A9852F" },
   ];
 

@@ -275,22 +275,32 @@ export default function Pomodoro({ tasks = [], updateTask, onColorChange }) {
       <div className="absolute top-6 right-8 flex gap-2" onMouseDown={e => e.stopPropagation()}>
         {/* Image upload */}
         <label
-          className="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-opacity hover:opacity-80 cursor-pointer"
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 cursor-pointer"
           style={{ background: tabActive, color: textColor }}
           title="Upload background image"
         >
-          🖼
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="1.5" y="2.5" width="14" height="12" rx="1.5"/>
+            <circle cx="5.5" cy="6.5" r="1.3"/>
+            <path d="M1.5 11.5l4-3.5 3 2.5 3-3 4 4.5"/>
+          </svg>
           <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
         </label>
 
         {/* Color palette toggle */}
         <button
           onClick={() => setShowPalette(p => !p)}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-xl transition-opacity hover:opacity-80"
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
           style={{ background: tabActive, color: textColor }}
           title="Customize theme"
         >
-          🎨
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="8.5" cy="8.5" r="6.5"/>
+            <circle cx="6" cy="6.5" r="0.9" fill="currentColor"/>
+            <circle cx="11" cy="6.5" r="0.9" fill="currentColor"/>
+            <circle cx="6" cy="10.5" r="0.9" fill="currentColor"/>
+            <circle cx="11" cy="10.5" r="0.9" fill="currentColor"/>
+          </svg>
         </button>
 
         {/* Palette panel */}
@@ -356,7 +366,7 @@ export default function Pomodoro({ tasks = [], updateTask, onColorChange }) {
             {paletteTab === "images" && (
               <>
                 {bgImages.length === 0 && (
-                  <p className="text-xs mb-3" style={{ color: mutedColor }}>No saved images. Use the 🖼 button to upload one.</p>
+                  <p className="text-xs mb-3" style={{ color: mutedColor }}>No saved images. Use the image button above to upload one.</p>
                 )}
                 <div className="grid grid-cols-2 gap-2 mb-3 max-h-44 overflow-y-auto">
                   {bgImages.map(img => (
@@ -423,7 +433,7 @@ export default function Pomodoro({ tasks = [], updateTask, onColorChange }) {
               {mins}:{secs}
             </span>
           )}
-          {done && <p className="text-sm font-medium mt-3" style={{ color: textColor }}>Time&apos;s up! Great work 🎉</p>}
+          {done && <p className="text-sm font-medium mt-3" style={{ color: textColor }}>Time&apos;s up! Great work</p>}
           {!running && !editing && !done && (
             <p className="text-xs mt-2" style={{ color: mutedColor }}>Double-click to edit · max {MODES[mode].max} min</p>
           )}
@@ -444,7 +454,7 @@ export default function Pomodoro({ tasks = [], updateTask, onColorChange }) {
       </div>
 
       <p className="mt-6 text-sm" style={{ color: mutedColor }}>
-        {mode === "pomodoro" ? "Focus session · stay off your phone!" : "Take a breather 🌿"}
+        {mode === "pomodoro" ? "Focus session · stay off your phone!" : "Take a breather"}
       </p>
 
       {/* Quick checklist */}

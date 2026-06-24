@@ -328,7 +328,7 @@ export default function DailyTasks({
         <div className="flex flex-col gap-3">
           {active.length === 0 && (
             <div className="rounded-2xl border border-dashed px-6 py-16 text-center" style={{ background: "var(--surface)", borderColor: "var(--border-sage)" }}>
-              <p className="text-2xl mb-2">🌱</p>
+              <p className="text-3xl mb-2" style={{ color: "var(--sage)" }}>❀</p>
               <p className="text-sm font-semibold" style={{ color: "var(--t-text-muted)" }}>no streaks yet ✿ plant one above to get started!</p>
             </div>
           )}
@@ -348,7 +348,7 @@ export default function DailyTasks({
                 <div className="px-5 py-4 flex items-start gap-4 flex-1">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-base font-bold text-[var(--t-text-dark)]">{checkedToday ? "🌸" : "🌱"} {dt.name}</span>
+                      <span className="text-base font-bold text-[var(--t-text-dark)]">{dt.name}</span>
                       {dt.category && <CategoryPill cat={dt.category} categories={categories} />}
                     </div>
                     <div className="h-2 rounded-full overflow-hidden mb-1.5" style={{ background: "var(--sage-soft)" }}>

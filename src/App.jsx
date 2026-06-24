@@ -583,13 +583,13 @@ export default function App() {
         {/* Logo */}
         <div className="px-4 pt-5 pb-3 flex-shrink-0 relative" style={{ borderBottom: `1px solid var(--border)` }}>
           <div style={{ ...lora, color: "var(--rose-deep)" }} className="text-[21px] leading-tight">bloomtasks ✿</div>
-          <div className="text-[9.5px] font-semibold mt-0.5" style={{ color: "var(--sage-deep)" }}>your cozy planner</div>
+          <div className="text-[9.5px] font-semibold mt-0.5" style={{ color: "var(--t-text-muted)" }}>your cozy planner</div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto relative z-10">
-          <p className="text-[9px] font-bold uppercase tracking-[1px] px-2 mb-1.5 flex items-center gap-1" style={{ color: "var(--t-text-muted)" }}>
-            <span style={{ color: "var(--sage)" }}>🌿</span> Main
+          <p className="text-[9px] font-bold uppercase tracking-[1px] px-2 mb-1.5" style={{ color: "var(--t-text-muted)" }}>
+            Main
           </p>
           {NAV_MAIN.map(item => (
             <button key={item.id} onClick={() => { setPage(item.id); if (item.id !== "pomodoro") setPomodoroColor(null); }}
@@ -632,13 +632,13 @@ export default function App() {
             <span className="flex-shrink-0 w-4 text-center text-[13px]" style={{ color: navIconColor(page === "settings") }}>⚙</span>
             <span>Settings</span>
           </button>
-          <div className="rounded-2xl p-2.5 flex items-center gap-2 glow-sage" style={{ background: "var(--sage-soft)" }}>
+          <div className="rounded-2xl p-2.5 flex items-center gap-2 glow-rose" style={{ background: "var(--rose-soft)" }}>
             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--rose)" }}>
               <span className="text-[10px] font-bold" style={{ color: "#fff" }}>{initials}</span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11.5px] font-bold leading-tight truncate" style={{ color: "var(--t-text-dark)" }}>{displayName}</p>
-              <p className="text-[9px] truncate" style={{ color: "var(--sage-deep)" }}>{session.user.email}</p>
+              <p className="text-[9px] truncate" style={{ color: "var(--rose-deep)" }}>{session.user.email}</p>
             </div>
             <button onClick={handleSignOut}
               className="text-[8.5px] transition-colors flex-shrink-0 font-bold" style={{ color: "var(--rose-deep)" }}>

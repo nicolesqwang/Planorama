@@ -563,7 +563,7 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
 
   // ── Smart grouping ──────────────────────────────────────────
   const GROUP_DEFS = [
-    { key: "overdue", label: "Overdue",   emoji: "⏰", ink: "#B5673F", bg: "#F6E5DE", border: "#E7B9A4" },
+    { key: "overdue", label: "Overdue",   emoji: "✕", ink: "#B5673F", bg: "#F6E5DE", border: "#E7B9A4" },
     { key: "today",   label: "Today",     emoji: "✦", ink: "var(--rose-deep)", bg: "var(--rose-soft)", border: "var(--border-rose)" },
     { key: "week",    label: "This Week", emoji: "❀", ink: "var(--sage-deep)", bg: "var(--sage-soft)", border: "var(--border-sage)" },
     { key: "later",   label: "Later",     emoji: "☽", ink: "#A9852F", bg: "var(--butter-soft)", border: "#EAD08A" },
@@ -610,7 +610,7 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
                   <span className="inline text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 align-middle"
                     style={{ background: "var(--sage-soft)", color: "var(--sage-deep)" }}>❀ daily</span>
                 )}
-                {task.notes && <span className="text-[10px] ml-1" style={{ color: "var(--t-text-muted)" }}>· 📝</span>}
+                {task.notes && <span className="text-[10px] ml-1 uppercase font-bold tracking-wide" style={{ color: "var(--t-text-muted)" }}>· note</span>}
               </div>
               {(task.categories || []).length > 0 && (
                 <div className={`flex flex-wrap gap-1 mt-1.5 ${isAnimating ? "opacity-40" : ""}`}>
@@ -644,7 +644,7 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
           <div className="flex gap-2 items-center mt-2">
             <label className="flex items-center gap-1.5 border border-dashed text-xs font-bold px-3.5 py-2 rounded-full transition-all cursor-pointer"
               style={{ background: "var(--surface)", borderColor: "var(--border-sage)", color: "var(--sage-deep)" }}>
-              ⬆ Import
+              Import
               <input type="file" accept=".xlsx,.xls,.csv" className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files[0];
@@ -693,7 +693,7 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
         {/* ── Grouped task cards ── */}
         {activeTasks.length === 0 && (
           <div className="rounded-2xl border border-dashed px-6 py-16 text-center" style={{ background: "var(--surface)", borderColor: "var(--border-rose)" }}>
-            <p className="text-2xl mb-2">🌸</p>
+            <p className="text-3xl mb-2" style={{ color: "var(--rose)" }}>❀</p>
             <p className="text-sm font-semibold" style={{ color: "var(--t-text-muted)" }}>no tasks here ✿ enjoy your free time!</p>
           </div>
         )}

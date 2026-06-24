@@ -128,10 +128,10 @@ export default function Settings({ session, deleteAllCompleted, onSignOut }) {
             </div>
             <div className="flex gap-3">
               <Field label="First Name">
-                <ThemedInput value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Nicole" />
+                <ThemedInput value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" />
               </Field>
               <Field label="Last Name">
-                <ThemedInput value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Wang" />
+                <ThemedInput value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last name" />
               </Field>
             </div>
             <Field label="Email">

@@ -4,23 +4,41 @@ import { supabase } from "../supabase";
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
 const FEATURES = [
-  { icon: "📅", label: "Calendar" },
-  { icon: "✅", label: "Tasks" },
-  { icon: "⏱", label: "Pomodoro" },
-  { icon: "🌱", label: "Daily habits" },
+  { icon: "☽", label: "Calendar" },
+  { icon: "✿", label: "Tasks" },
+  { icon: "◌", label: "Pomodoro" },
+  { icon: "❀", label: "Daily habits" },
 ];
+
+function Footer() {
+  return (
+    <footer className="relative z-10 px-10 py-8 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-center"
+      style={{ borderTop: "1px solid var(--border)", color: "var(--plum-light)", background: "rgba(255,253,248,0.65)" }}>
+      <span>Created by Nicole Wang</span>
+      <span>·</span>
+      <a href="mailto:nicoleswang@berkeley.edu" className="hover:underline" style={{ color: "var(--rose-deep)" }}>Email</a>
+      <span>·</span>
+      <a href="https://linkedin.com/in/nicoleswang" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--rose-deep)" }}>LinkedIn</a>
+      <span>·</span>
+      <a href="https://nicoleswang.com" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--rose-deep)" }}>Website</a>
+    </footer>
+  );
+}
 
 function Page({ children }) {
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-bloom">
-      {/* soft glow auras */}
-      <div className="aura aura-rose"   style={{ width: 380, height: 380, top: -90, left: -70 }} />
-      <div className="aura aura-sage"   style={{ width: 360, height: 360, bottom: -70, right: -50 }} />
-      <div className="aura aura-butter" style={{ width: 260, height: 260, top: "38%", right: "10%" }} />
-      {/* a few quiet motifs — not a confetti field */}
-      <span className="absolute top-[18%] left-[9%] text-2xl opacity-40 select-none">✿</span>
-      <span className="absolute bottom-[24%] right-[10%] text-2xl opacity-40 select-none">✦</span>
-      {children}
+    <div className="relative bg-bloom">
+      <div className="min-h-screen flex flex-col relative overflow-hidden">
+        {/* soft glow auras */}
+        <div className="aura aura-rose"   style={{ width: 380, height: 380, top: -90, left: -70 }} />
+        <div className="aura aura-sage"   style={{ width: 360, height: 360, bottom: -70, right: -50 }} />
+        <div className="aura aura-butter" style={{ width: 260, height: 260, top: "38%", right: "10%" }} />
+        {/* a few quiet motifs — not a confetti field */}
+        <span className="absolute top-[18%] left-[9%] text-2xl opacity-40 select-none">✿</span>
+        <span className="absolute bottom-[24%] right-[10%] text-2xl opacity-40 select-none">✦</span>
+        {children}
+      </div>
+      <Footer />
     </div>
   );
 }
@@ -80,7 +98,7 @@ export default function Landing() {
           bloom into <br/>your day <span style={{ color: "var(--rose-deep)" }}>✿</span>
         </h1>
         <p className="text-base max-w-md mb-10 font-semibold leading-relaxed" style={{ color: "var(--plum-mid)" }}>
-          tasks, calendar, and focus — all in one soft, cozy place 🌿
+          tasks, calendar, and focus — all in one soft, cozy place
         </p>
         <div className="flex gap-3">
           <button onClick={() => setMode("signup")}
@@ -120,7 +138,7 @@ export default function Landing() {
               <rect x="2" y="4" width="18" height="14" rx="2"/><polyline points="2,4 11,13 20,4"/>
             </svg>
           </div>
-          <h2 style={{ ...lora, color: "var(--plum)" }} className="text-xl mb-2">Check your email ✉</h2>
+          <h2 style={{ ...lora, color: "var(--plum)" }} className="text-xl mb-2">Check your email</h2>
           <p className="text-sm font-semibold" style={{ color: "var(--plum-light)" }}>We sent a confirmation link to <strong style={{ color: "var(--plum)" }}>{email}</strong>. Click it to activate your account.</p>
           <button onClick={() => { setMode("login"); setConfirmed(false); }}
             className="mt-6 w-full text-sm font-bold py-2.5 rounded-full transition-colors"
@@ -154,13 +172,13 @@ export default function Landing() {
                 <div className="flex-1">
                   <label className="block text-[10px] font-bold uppercase tracking-[0.7px] mb-1" style={{ color: "var(--plum-light)" }}>First Name</label>
                   <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="Nicole"
+                    onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="First name"
                     className="w-full text-sm rounded-xl px-4 py-2.5 outline-none focus:ring-2 font-medium border" style={inputStyle} />
                 </div>
                 <div className="flex-1">
                   <label className="block text-[10px] font-bold uppercase tracking-[0.7px] mb-1" style={{ color: "var(--plum-light)" }}>Last Name</label>
                   <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="Wang"
+                    onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="Last name"
                     className="w-full text-sm rounded-xl px-4 py-2.5 outline-none focus:ring-2 font-medium border" style={inputStyle} />
                 </div>
               </div>

@@ -69,7 +69,6 @@ body { font-family: 'Nunito', system-ui, sans-serif; }
   -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 38%, black 0%, transparent 78%);
   mask-image: radial-gradient(ellipse 75% 65% at 50% 38%, black 0%, transparent 78%);
 }
-.bg-bloom > * { position: relative; z-index: 1; }
 
 /* a second, larger soft dot pattern that also fades — used on a few pages
    for variety instead of the grid */
