@@ -230,6 +230,36 @@ export default function App() {
 
   useEffect(() => { if (session) loadAll(); }, [session]);
 
+  // Daily-task instances accumulate fast (a 90-day streak = 90 rows), so we trim
+  // the stale ones on load. This only touches `tasks` rows — it never touches
+  // daily_tasks or daily_task_completions, so the Daily Tasks page's progress
+  // bars and streaks are completely unaffected.
+  async function cleanupStaleDailyInstances(rawTasks) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 14);
+    const cutoffStr = cutoff.toISOString().split("T")[0];
+
+    // Delete daily-task instances that have sat overdue & incomplete for 2+ weeks.
+    const toDelete = new Set(
+      rawTasks.filter(t => t.daily_task_id && !t.done && t.due_date < cutoffStr).map(t => t.id)
+    );
+
+    // Once any single daily task has 50+ completed instances on file, clear them.
+    const doneByDailyTask = {};
+    rawTasks.forEach(t => {
+      if (t.daily_task_id && t.done && !toDelete.has(t.id)) {
+        (doneByDailyTask[t.daily_task_id] ||= []).push(t.id);
+      }
+    });
+    Object.values(doneByDailyTask).forEach(ids => {
+      if (ids.length >= 50) ids.forEach(id => toDelete.add(id));
+    });
+
+    if (toDelete.size === 0) return rawTasks;
+    await supabase.from("tasks").delete().in("id", [...toDelete]);
+    return rawTasks.filter(t => !toDelete.has(t.id));
+  }
+
   async function loadAll() {
   const uid = session.user.id;
   const [t, e, c, tt, et, dt, dc, tx] = await Promise.all([
@@ -242,7 +272,7 @@ export default function App() {
     supabase.from("daily_task_completions").select("*").eq("user_id", uid),
     supabase.from("transactions").select("*").eq("user_id", uid).order("date", { ascending: false }),
   ]);
-  setTasksState(t.data || []);
+  setTasksState(await cleanupStaleDailyInstances(t.data || []));
   setEventsState(e.data || []);
   setCatsState(c.data || []);
   setDailyTasks(dt.data || []);
@@ -559,7 +589,17 @@ export default function App() {
       : emailUser.substring(0, 2).toUpperCase();
   const hour         = new Date().getHours();
   const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const activeTasks  = tasks.filter(t => !t.done);
+
+  // Daily-task instances more than a week out are hidden from Tasks/Dashboard/the
+  // sidebar badge so a long-running daily task (e.g. a 90-day streak) doesn't bury
+  // everything else — overdue ones still show so nothing silently disappears.
+  // The Daily Tasks page itself reads from the unfiltered `tasks` array, so its
+  // progress bars and streaks are untouched by this.
+  const windowEndStr = (() => { const d = new Date(); d.setDate(d.getDate() + 6); return d.toISOString().split("T")[0]; })();
+  // due_date <= windowEndStr covers both "overdue" (any past date) and "today through +6 days" in one check
+  const visibleTasks = tasks.filter(t => !t.daily_task_id || t.done || t.due_date <= windowEndStr);
+
+  const activeTasks  = visibleTasks.filter(t => !t.done);
   const todayStr = new Date().toISOString().split("T")[0];
   const completedTodayIds = new Set(dailyTaskCompletions.filter(c => c.completed_date === todayStr).map(c => c.daily_task_id));
   const uncompletedDailyCount = dailyTasks.filter(dt => dt.start_date <= todayStr && dt.end_date >= todayStr && !completedTodayIds.has(dt.id)).length;
@@ -688,14 +728,14 @@ export default function App() {
         {/* Page content */}
         <main className="flex-1">
           {page === "dashboard" && (
-            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask} deleteTask={deleteTask}
+            <Dashboard tasks={visibleTasks} setTasks={updateTask} addTask={addTask} deleteTask={deleteTask}
               events={events} addEvent={addEvent} categories={normCats}
               taskTypes={taskTypes}
               eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
               onExcelImport={handleExcelImport} onICSImport={handleICSImport} />
           )}
           {page === "calendar" && (
-            <Dashboard tasks={tasks} setTasks={updateTask} addTask={addTask} deleteTask={deleteTask}
+            <Dashboard tasks={visibleTasks} setTasks={updateTask} addTask={addTask} deleteTask={deleteTask}
               events={events} addEvent={addEvent} categories={normCats}
               taskTypes={taskTypes}
               eventTypes={eventTypes} addEventType={addEventType} removeEventType={removeEventType}
@@ -703,7 +743,7 @@ export default function App() {
           )}
           {page === "pomodoro" && <Pomodoro tasks={tasks} updateTask={updateTask} onColorChange={setPomodoroColor} />}
           {page === "tasks" && (
-            <TaskList tasks={tasks} updateTask={updateTask} addTask={addTask} deleteTask={deleteTask}
+            <TaskList tasks={visibleTasks} updateTask={updateTask} addTask={addTask} deleteTask={deleteTask}
               categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
               taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
               onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted}

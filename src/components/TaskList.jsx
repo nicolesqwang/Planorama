@@ -525,10 +525,8 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const todayKey = new Date().toISOString().split("T")[0];
   const activeTasks = tasks
-    // Past daily-task instances are handled on the Daily Tasks page — don't clutter the list with missed days
-    .filter(t => !t.done && !(t.daily_task_id && t.due_date < todayKey))
+    .filter(t => !t.done)
     .sort((a,b) => {
       if (sortByCategory) return (a.categories?.[0]||"").localeCompare(b.categories?.[0]||"");
       return new Date(`${a.due_date}T${a.due_time}:00`) - new Date(`${b.due_date}T${b.due_time}:00`);
