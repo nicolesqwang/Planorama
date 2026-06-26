@@ -1,5 +1,6 @@
 import { useState } from "react";
 import SmartScheduler from "./SmartScheduler";
+import { localDateStr } from "../dateUtils";
 
 const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -86,7 +87,7 @@ function EventModal({ item, onClose, onBack, categories, taskTypes = [], isTask,
   const [notes, setNotes]       = useState(item.notes || "");
 
   const date = isTask ? dueDate : (item.date || "");
-  const { value, unit, raw } = getTimeLeft(date || new Date().toISOString().split("T")[0], dueTime);
+  const { value, unit, raw } = getTimeLeft(date || localDateStr(), dueTime);
   const canSave = isTask ? (name.trim() && dueDate && selCats.length > 0) : true;
 
   function toggleCat(c)  { setSelCats(s  => s.includes(c) ? s.filter(x=>x!==c) : [...s,c]); }

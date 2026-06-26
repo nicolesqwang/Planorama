@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { askClaude, stripColorEmoji, sleep as delay } from "../anthropic";
+import { localDateStr } from "../dateUtils";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -137,10 +138,10 @@ export default function SmartScheduler({ tasks, categories, onClose }) {
   const [result, setResult]         = useState(null);
   const [exportToast, setExportToast] = useState(false);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDateStr();
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const tomorrowStr = localDateStr(tomorrow);
   const relevantTasks = tasks.filter(t => !t.done && (t.due_date === todayStr || t.due_date === tomorrowStr));
 
   async function handleGenerate() {

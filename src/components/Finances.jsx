@@ -4,6 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { askClaude, parseClaudeJSON, stripColorEmoji, sleep } from "../anthropic";
+import { localDateStr } from "../dateUtils";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -59,7 +60,7 @@ Respond ONLY with valid JSON, no other text:
   "type": "expense" or "income",
   "category": one of [Food, Housing, Transport, Entertainment, Shopping, Health, Education, Subscriptions, Other, Internship, Job, Freelance, Family],
   "description": short description string,
-  "date": today's date as YYYY-MM-DD, today is ${new Date().toISOString().split("T")[0]}
+  "date": today's date as YYYY-MM-DD, today is ${localDateStr()}
 }
 If you cannot parse a transaction, return:
 {"error": "could not parse"}`;
@@ -95,7 +96,7 @@ function AddBar({ onAdd }) {
           type: parsed.type === "income" ? "income" : "expense",
           category: parsed.category,
           description: parsed.description || message,
-          date: parsed.date || new Date().toISOString().split("T")[0],
+          date: parsed.date || localDateStr(),
         });
         setToast({ ok: true, text: `✿ logged $${Math.abs(Number(parsed.amount)).toFixed(0)} to ${parsed.category}!` });
         setInput("");

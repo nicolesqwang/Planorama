@@ -9,6 +9,7 @@ import Pomodoro from "./components/Pomodoro";
 import Settings from "./components/Settings";
 import Finances from "./components/Finances";
 import { DEFAULT_THEME_KEY, applyTheme } from "./theme";
+import { localDateStr } from "./dateUtils";
 
 const DEFAULT_TASK_TYPES  = ["HW", "Study", "Project", "Exam", "Presentation", "Review"];
 const DEFAULT_EVENT_TYPES = ["Meeting", "Social", "Workshop", "Event", "Office Hours", "Club"];
@@ -96,7 +97,7 @@ export function parseExcelFile(file, existingCategories) {
           const name = colMap.task !== undefined ? String(row[colMap.task] || "").trim() : "";
           if (!name) return;
 
-          let dueDate = new Date().toISOString().split("T")[0];
+          let dueDate = localDateStr();
           if (colMap.dueDate !== undefined) {
             const raw = row[colMap.dueDate];
             if (raw) {
@@ -237,7 +238,7 @@ export default function App() {
   async function cleanupStaleDailyInstances(rawTasks) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 14);
-    const cutoffStr = cutoff.toISOString().split("T")[0];
+    const cutoffStr = localDateStr(cutoff);
 
     // Delete daily-task instances that have sat overdue & incomplete for 2+ weeks.
     const toDelete = new Set(
@@ -380,10 +381,10 @@ export default function App() {
   async function addDailyTask({ name, category, durationDays }) {
     const uid = session.user.id;
     const today = new Date();
-    const startDate = today.toISOString().split("T")[0];
+    const startDate = localDateStr(today);
     const endDateObj = new Date(today);
     endDateObj.setDate(today.getDate() + durationDays - 1);
-    const endDate = endDateObj.toISOString().split("T")[0];
+    const endDate = localDateStr(endDateObj);
 
     const { data: dt, error } = await supabase.from("daily_tasks").insert({
       user_id: uid, name, category: category || null, start_date: startDate, end_date: endDate,
@@ -396,7 +397,7 @@ export default function App() {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       rows.push({
-        user_id: uid, name, due_date: d.toISOString().split("T")[0],
+        user_id: uid, name, due_date: localDateStr(d),
         due_time: "23:59", categories: category ? [category] : [],
         types: [], done: false, notes: "", daily_task_id: dt.id,
       });
@@ -407,7 +408,7 @@ export default function App() {
 
   async function toggleDailyCompletion(dailyTaskId) {
     const uid = session.user.id;
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = localDateStr();
     const existing = dailyTaskCompletions.find(
       c => c.daily_task_id === dailyTaskId && c.completed_date === todayStr
     );
@@ -485,7 +486,7 @@ export default function App() {
       let cur = new Date(start);
       while (cur <= end) {
         rows.push({
-          user_id: uid, name, due_date: cur.toISOString().split("T")[0],
+          user_id: uid, name, due_date: localDateStr(cur),
           due_time: "23:59", categories: category ? [category] : [],
           types: [], done: false, notes: notes || "", daily_task_id: dailyTaskId,
         });
@@ -595,12 +596,12 @@ export default function App() {
   // everything else — overdue ones still show so nothing silently disappears.
   // The Daily Tasks page itself reads from the unfiltered `tasks` array, so its
   // progress bars and streaks are untouched by this.
-  const windowEndStr = (() => { const d = new Date(); d.setDate(d.getDate() + 6); return d.toISOString().split("T")[0]; })();
+  const windowEndStr = (() => { const d = new Date(); d.setDate(d.getDate() + 6); return localDateStr(d); })();
   // due_date <= windowEndStr covers both "overdue" (any past date) and "today through +6 days" in one check
   const visibleTasks = tasks.filter(t => !t.daily_task_id || t.done || t.due_date <= windowEndStr);
 
   const activeTasks  = visibleTasks.filter(t => !t.done);
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDateStr();
   const completedTodayIds = new Set(dailyTaskCompletions.filter(c => c.completed_date === todayStr).map(c => c.daily_task_id));
   const uncompletedDailyCount = dailyTasks.filter(dt => dt.start_date <= todayStr && dt.end_date >= todayStr && !completedTodayIds.has(dt.id)).length;
 

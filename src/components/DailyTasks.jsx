@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { localDateStr } from "../dateUtils";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -274,7 +275,7 @@ export default function DailyTasks({
   const [showArchived, setShowArchived] = useState(false);
   const [selectedDt, setSelectedDt]    = useState(null);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDateStr();
   const completedTodaySet = new Set(
     dailyTaskCompletions.filter(c => c.completed_date === todayStr).map(c => c.daily_task_id)
   );

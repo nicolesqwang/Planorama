@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { localDateStr } from "../dateUtils";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -556,7 +557,7 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
     return "#9DB387";
   };
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDateStr();
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   // ── Smart grouping ──────────────────────────────────────────
