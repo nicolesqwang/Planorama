@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { localDateStr } from "../dateUtils";
+import { LENGTH_OPTIONS, FREQUENCY_OPTIONS, occurrenceCount, RecurrencePicker } from "../recurrence";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -297,7 +298,7 @@ function TaskModal({ task, onClose, onSave, onDuplicate, onDelete, categories, t
         </div>
         {task.daily_task_id && (
           <p className="text-[11px] text-[var(--t-text-muted)] mt-4 px-1">
-            Part of a daily series — to delete or change duration, go to <strong>Daily Tasks</strong>.
+            Part of a recurring series — to delete or change duration, go to <strong>Recurring Tasks</strong>.
           </p>
         )}
         <div className="flex gap-2 mt-3">
@@ -316,15 +317,6 @@ function TaskModal({ task, onClose, onSave, onDuplicate, onDelete, categories, t
   );
 }
 
-const DURATION_OPTIONS = [
-  { label: "3 days", days: 3 },
-  { label: "1 week", days: 7 },
-  { label: "2 weeks", days: 14 },
-  { label: "1 month", days: 30 },
-  { label: "3 months", days: 90 },
-  { label: "6 months", days: 180 },
-  { label: "1 year", days: 365 },
-];
 
 // ── Add Task Modal ─────────────────────────────────────────────
 function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, prefill }) {
@@ -335,15 +327,13 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
   const [selTypes, setSelTypes] = useState(prefill?.types || []);
   const [notes, setNotes]       = useState(prefill?.notes || "");
   const [isDailyTask, setIsDailyTask] = useState(false);
-  const [selectedDays, setSelectedDays] = useState(7);
-  const [useCustom, setUseCustom] = useState(false);
-  const [customDays, setCustomDays] = useState("");
+  const [lengthDays, setLengthDays] = useState(7);
+  const [frequencyDays, setFrequencyDays] = useState(1);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  const durationDays = isDailyTask ? (useCustom ? (parseInt(customDays) || 0) : selectedDays) : 0;
   const canSubmit = isDailyTask
-    ? (name.trim() && durationDays >= 1)
+    ? (name.trim() && lengthDays >= 1 && frequencyDays >= 1)
     : (name.trim() && dueDate && selCats.length > 0);
 
   function toggleCat(c) {
@@ -355,11 +345,12 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
   }
   function toggleType(t) { setSelTypes(s => s.includes(t) ? s.filter(x=>x!==t) : [...s,t]); }
 
-  const endPreview = isDailyTask && durationDays >= 1 ? (() => {
+  const endPreview = isDailyTask && lengthDays >= 1 ? (() => {
     const d = new Date();
-    d.setDate(d.getDate() + durationDays - 1);
+    d.setDate(d.getDate() + lengthDays - 1);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   })() : "";
+  const occurrences = isDailyTask ? occurrenceCount(lengthDays, frequencyDays) : 0;
 
   async function handleSubmit() {
     if (!canSubmit || saving) return;
@@ -367,11 +358,11 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
       setSaving(true);
       setSubmitError(null);
       try {
-        await onAddDailyTask({ name, category: selCats[0] || null, durationDays });
+        await onAddDailyTask({ name, category: selCats[0] || null, lengthDays, frequencyDays });
         onClose();
       } catch (err) {
         setSaving(false);
-        setSubmitError(err.message || "Failed to create daily task. Please try again.");
+        setSubmitError(err.message || "Failed to create recurring task. Please try again.");
       }
     } else {
       onAdd({ name, dueDate, dueTime, categories: selCats, types: selTypes, done: false, notes });
@@ -393,41 +384,30 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
           </div>
 
           {!prefill && (
-            <button onClick={() => { setIsDailyTask(s => !s); setUseCustom(false); setCustomDays(""); }}
+            <button onClick={() => setIsDailyTask(s => !s)}
               className={`flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border transition-all w-fit ${isDailyTask ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M13.5 4.5A6 6 0 0 0 2.5 8"/><path d="M2.5 11.5A6 6 0 0 0 13.5 8"/>
                 <polyline points="11,2.5 13.5,4.5 11,6.5"/><polyline points="5,9.5 2.5,11.5 5,13.5"/>
               </svg>
-              Make this a Daily Task
+              Make this a Recurring Task
             </button>
           )}
 
           {isDailyTask && (
             <div className="bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4 flex flex-col gap-3">
-              <p className="text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px]">Repeat for how long?</p>
-              <div className="flex flex-wrap gap-2">
-                {DURATION_OPTIONS.map(opt => (
-                  <button key={opt.days} onClick={() => { setSelectedDays(opt.days); setUseCustom(false); }}
-                    className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!useCustom && selectedDays === opt.days ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-card)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
-                    {opt.label}
-                  </button>
-                ))}
-                <button onClick={() => setUseCustom(true)}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-all ${useCustom ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-card)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
-                  Custom
-                </button>
-              </div>
-              {useCustom && (
-                <div className="flex items-center gap-2">
-                  <input type="number" min="1" max="3650" value={customDays} onChange={e => setCustomDays(e.target.value)}
-                    placeholder="Days"
-                    className="w-32 text-sm bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
-                  <span className="text-sm text-[var(--t-text-muted)]">days</span>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <RecurrencePicker label="How long?" options={LENGTH_OPTIONS} value={lengthDays} onChange={setLengthDays} unitWord="day" />
                 </div>
-              )}
+                <div className="flex-1">
+                  <RecurrencePicker label="How often?" options={FREQUENCY_OPTIONS} value={frequencyDays} onChange={setFrequencyDays} unitWord="day" />
+                </div>
+              </div>
               {endPreview && (
-                <p className="text-[11px] text-[var(--t-text-muted)]">Starts today · ends {endPreview}</p>
+                <p className="text-[11px] text-[var(--t-text-muted)]">
+                  Starts today · ends {endPreview} · {occurrences} check-in{occurrences !== 1 ? "s" : ""}
+                </p>
               )}
             </div>
           )}
@@ -491,7 +471,7 @@ function AddTaskModal({ onClose, onAdd, onAddDailyTask, categories, taskTypes, p
         )}
         <button onClick={handleSubmit} disabled={!canSubmit || saving}
           className="mt-3 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
-          {saving ? "Creating..." : isDailyTask ? "Add Daily Task" : (prefill ? "Add Duplicate" : "Add Task")}
+          {saving ? "Creating..." : isDailyTask ? "Add Recurring Task" : (prefill ? "Add Duplicate" : "Add Task")}
         </button>
       </div>
     </div>
@@ -607,7 +587,7 @@ export default function TaskList({ tasks, updateTask, addTask, deleteTask, categ
                 {task.name}
                 {task.daily_task_id && (
                   <span className="inline text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1.5 align-middle"
-                    style={{ background: "var(--sage-soft)", color: "var(--sage-deep)" }}>❀ daily</span>
+                    style={{ background: "var(--sage-soft)", color: "var(--sage-deep)" }}>❀ recurring</span>
                 )}
                 {task.notes && <span className="text-[10px] ml-1 uppercase font-bold tracking-wide" style={{ color: "var(--t-text-muted)" }}>· note</span>}
               </div>

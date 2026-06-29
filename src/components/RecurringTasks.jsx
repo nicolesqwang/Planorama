@@ -1,17 +1,8 @@
 import { useState } from "react";
 import { localDateStr } from "../dateUtils";
+import { LENGTH_OPTIONS, FREQUENCY_OPTIONS, occurrenceCount, RecurrencePicker } from "../recurrence";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
-
-const DURATION_OPTIONS = [
-  { label: "3 days", days: 3 },
-  { label: "1 week", days: 7 },
-  { label: "2 weeks", days: 14 },
-  { label: "1 month", days: 30 },
-  { label: "3 months", days: 90 },
-  { label: "6 months", days: 180 },
-  { label: "1 year", days: 365 },
-];
 
 function CategoryPill({ cat, categories }) {
   const s = categories.find(c => c.name === cat) || { bg: "var(--t-bg-input)", text: "var(--t-text-med)", border: "var(--t-border)" };
@@ -21,8 +12,15 @@ function CategoryPill({ cat, categories }) {
   );
 }
 
+function freqLabel(days) {
+  const preset = FREQUENCY_OPTIONS.find(o => o.days === days);
+  if (preset) return preset.label;
+  if (days === 7) return "Once a week";
+  return `Every ${days} days`;
+}
+
 // ── Edit Modal ─────────────────────────────────────────────────
-function DailyTaskEditModal({ dt, instances, completedCount, categories, onSave, onDelete, onClose }) {
+function RecurringTaskEditModal({ dt, instances, completedCount, totalOccurrences, categories, onSave, onDelete, onClose }) {
   const [name, setName]       = useState(dt.name);
   const [selCat, setSelCat]   = useState(dt.category || "");
   const [endDate, setEndDate] = useState(dt.end_date);
@@ -32,17 +30,13 @@ function DailyTaskEditModal({ dt, instances, completedCount, categories, onSave,
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError]     = useState(null);
 
-  const totalDays = Math.round(
-    (new Date(dt.end_date + "T00:00:00") - new Date(dt.start_date + "T00:00:00")) / 86400000
-  ) + 1;
-
   const canSave = name.trim() && endDate >= dt.start_date;
 
   const endDateChanged = endDate !== dt.end_date;
   const endDateHint = endDateChanged
     ? endDate < dt.end_date
       ? "Instances after the new end date will be removed."
-      : "New daily instances will be created up to the new end date."
+      : "New check-ins will be scheduled up to the new end date."
     : null;
 
   async function handleSave() {
@@ -74,9 +68,9 @@ function DailyTaskEditModal({ dt, instances, completedCount, categories, onSave,
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
-        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-0.5">Edit Daily Task</h2>
+        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-0.5">Edit Recurring Task</h2>
         <p className="text-[11px] text-[var(--t-text-muted)] mb-5">
-          {completedCount} / {totalDays} days completed · started {new Date(dt.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          {completedCount} / {totalOccurrences} check-ins completed · {freqLabel(dt.frequency_days || 1).toLowerCase()} · started {new Date(dt.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </p>
 
         <div className="flex flex-col gap-4">
@@ -112,6 +106,9 @@ function DailyTaskEditModal({ dt, instances, completedCount, categories, onSave,
             {endDateHint && (
               <p className="text-[11px] text-[var(--t-text-muted)] mt-1">{endDateHint}</p>
             )}
+            <p className="text-[11px] text-[var(--t-text-muted)] mt-1">
+              How often this repeats can&apos;t be changed after creation — delete and recreate it to change frequency.
+            </p>
           </div>
 
           <div>
@@ -145,7 +142,7 @@ function DailyTaskEditModal({ dt, instances, completedCount, categories, onSave,
         ) : (
           <div className="mt-5 bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl p-4">
             <p className="text-sm text-[var(--t-text-dark)] font-medium mb-1">Delete this entire series?</p>
-            <p className="text-xs text-[var(--t-text-muted)] mb-3">This removes the daily task and all its instances from your task list. Cannot be undone.</p>
+            <p className="text-xs text-[var(--t-text-muted)] mb-3">This removes the recurring task and all its instances from your task list. Cannot be undone.</p>
             <div className="flex gap-2">
               <button onClick={() => setConfirmDelete(false)}
                 className="flex-1 text-sm border border-[var(--t-border)] text-[var(--t-text-med)] py-2 rounded-xl hover:bg-[var(--t-bg-accent)] transition-colors">
@@ -164,21 +161,20 @@ function DailyTaskEditModal({ dt, instances, completedCount, categories, onSave,
 }
 
 // ── Add Modal ──────────────────────────────────────────────────
-function AddDailyModal({ onClose, onAdd, categories }) {
+function AddRecurringModal({ onClose, onAdd, categories }) {
   const [name, setName] = useState("");
   const [selCat, setSelCat] = useState("");
-  const [selectedDays, setSelectedDays] = useState(7);
-  const [useCustom, setUseCustom] = useState(false);
-  const [customDays, setCustomDays] = useState("");
+  const [lengthDays, setLengthDays] = useState(7);
+  const [frequencyDays, setFrequencyDays] = useState(1);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  const durationDays = useCustom ? (parseInt(customDays) || 0) : selectedDays;
-  const canSubmit = name.trim() && durationDays >= 1;
+  const canSubmit = name.trim() && lengthDays >= 1 && frequencyDays >= 1;
+  const occurrences = occurrenceCount(lengthDays, frequencyDays);
 
-  const endPreview = durationDays >= 1 ? (() => {
+  const endPreview = lengthDays >= 1 ? (() => {
     const d = new Date();
-    d.setDate(d.getDate() + durationDays - 1);
+    d.setDate(d.getDate() + lengthDays - 1);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   })() : "";
 
@@ -187,7 +183,7 @@ function AddDailyModal({ onClose, onAdd, categories }) {
     setSaving(true);
     setSubmitError(null);
     try {
-      await onAdd({ name: name.trim(), category: selCat || null, durationDays });
+      await onAdd({ name: name.trim(), category: selCat || null, lengthDays, frequencyDays });
       onClose();
     } catch (err) {
       setSaving(false);
@@ -199,7 +195,7 @@ function AddDailyModal({ onClose, onAdd, categories }) {
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
-        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-5">Add Daily Task</h2>
+        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-5">Add Recurring Task</h2>
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Task Name</label>
@@ -207,32 +203,21 @@ function AddDailyModal({ onClose, onAdd, categories }) {
               onKeyDown={e => e.key === "Enter" && handleSubmit()}
               className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
-          <div>
-            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-2">Repeat for how long?</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {DURATION_OPTIONS.map(opt => (
-                <button key={opt.days} onClick={() => { setSelectedDays(opt.days); setUseCustom(false); }}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!useCustom && selectedDays === opt.days ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
-                  {opt.label}
-                </button>
-              ))}
-              <button onClick={() => setUseCustom(true)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-all ${useCustom ? "bg-[var(--t-primary)] text-[var(--t-on-primary)] border-[var(--t-primary)]" : "bg-[var(--t-bg-input)] text-[var(--t-text-med)] border-[var(--t-border)] hover:bg-[var(--t-bg-accent)]"}`}>
-                Custom
-              </button>
+
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <RecurrencePicker label="How long?" options={LENGTH_OPTIONS} value={lengthDays} onChange={setLengthDays} unitWord="day" />
             </div>
-            {useCustom && (
-              <div className="flex items-center gap-2 mb-1">
-                <input type="number" min="1" max="3650" value={customDays} onChange={e => setCustomDays(e.target.value)}
-                  placeholder="Days"
-                  className="w-32 text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
-                <span className="text-sm text-[var(--t-text-muted)]">days</span>
-              </div>
-            )}
-            {endPreview && (
-              <p className="text-[11px] text-[var(--t-text-muted)]">Starts today · ends {endPreview}</p>
-            )}
+            <div className="flex-1">
+              <RecurrencePicker label="How often?" options={FREQUENCY_OPTIONS} value={frequencyDays} onChange={setFrequencyDays} unitWord="day" />
+            </div>
           </div>
+          {endPreview && (
+            <p className="text-[11px] text-[var(--t-text-muted)] -mt-1">
+              Starts today · ends {endPreview} · {occurrences} check-in{occurrences !== 1 ? "s" : ""}
+            </p>
+          )}
+
           <div>
             <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">
               Category <span className="normal-case font-normal">(optional)</span>
@@ -258,7 +243,7 @@ function AddDailyModal({ onClose, onAdd, categories }) {
         )}
         <button onClick={handleSubmit} disabled={!canSubmit || saving}
           className="mt-3 w-full bg-[var(--t-primary)] hover:bg-[var(--t-primary-hover)] disabled:opacity-40 disabled:cursor-not-allowed text-[var(--t-on-primary)] text-sm font-semibold py-2.5 rounded-xl transition-colors">
-          {saving ? "Creating..." : "Add Daily Task"}
+          {saving ? "Creating..." : "Add Recurring Task"}
         </button>
       </div>
     </div>
@@ -266,7 +251,7 @@ function AddDailyModal({ onClose, onAdd, categories }) {
 }
 
 // ── Main page ──────────────────────────────────────────────────
-export default function DailyTasks({
+export default function RecurringTasks({
   dailyTasks, dailyTaskCompletions, dailyTaskInstances,
   categories, onAddDailyTask, onToggleCompletion,
   onUpdateDailyTask, onDeleteDailyTask,
@@ -279,6 +264,11 @@ export default function DailyTasks({
   const completedTodaySet = new Set(
     dailyTaskCompletions.filter(c => c.completed_date === todayStr).map(c => c.daily_task_id)
   );
+  // Whether each recurring task actually has a check-in scheduled today —
+  // with frequency >1 (e.g. weekly), most days aren't scheduled at all.
+  const scheduledTodaySet = new Set(
+    dailyTaskInstances.filter(t => t.due_date === todayStr).map(t => t.daily_task_id)
+  );
 
   const active   = dailyTasks.filter(dt => dt.end_date >= todayStr);
   const archived = dailyTasks.filter(dt => dt.end_date < todayStr);
@@ -287,16 +277,22 @@ export default function DailyTasks({
     return dailyTaskCompletions.filter(c => c.daily_task_id === dtId).length;
   }
 
-  function totalDays(dt) {
+  // "Day X of Y" is occurrence-based, not calendar-day-based — once a week
+  // for a month is "day 1 of 4", not "day 1 of 28".
+  function totalOccurrences(dt) {
     const start = new Date(dt.start_date + "T00:00:00");
     const end   = new Date(dt.end_date   + "T00:00:00");
-    return Math.round((end - start) / 86400000) + 1;
+    const spanDays = Math.round((end - start) / 86400000);
+    const freq = dt.frequency_days || 1;
+    return Math.floor(spanDays / freq) + 1;
   }
 
-  function currentDay(dt) {
+  function currentOccurrence(dt) {
     const start = new Date(dt.start_date + "T00:00:00");
     const today = new Date(todayStr + "T00:00:00");
-    return Math.min(Math.max(Math.round((today - start) / 86400000) + 1, 1), totalDays(dt));
+    const freq = dt.frequency_days || 1;
+    const daysSinceStart = Math.max(0, Math.round((today - start) / 86400000));
+    return Math.min(Math.floor(daysSinceStart / freq) + 1, totalOccurrences(dt));
   }
 
   function fmtDate(s) {
@@ -315,13 +311,13 @@ export default function DailyTasks({
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: "var(--sage-deep)" }}>{todayLabel}</p>
-            <h1 style={lora} className="text-[44px] text-[var(--t-text-dark)] leading-tight">Daily Tasks <span style={{ color: "var(--rose)" }}>❀</span></h1>
-            <p className="text-[12px] font-semibold mt-1" style={{ color: "var(--t-text-muted)" }}>tiny habits, big blooms — check in each day ♡</p>
+            <h1 style={lora} className="text-[44px] text-[var(--t-text-dark)] leading-tight">Recurring Tasks <span style={{ color: "var(--rose)" }}>❀</span></h1>
+            <p className="text-[12px] font-semibold mt-1" style={{ color: "var(--t-text-muted)" }}>tiny habits, on your own schedule ♡</p>
           </div>
           <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all mt-2 glow-rose"
             style={{ background: "var(--rose)", color: "#fff" }}>
-            + Add Daily Task
+            + Add Recurring Task
           </button>
         </div>
 
@@ -334,30 +330,34 @@ export default function DailyTasks({
             </div>
           )}
           {active.map(dt => {
-            const total       = totalDays(dt);
+            const total       = totalOccurrences(dt);
             const done        = completedCount(dt.id);
             const pct         = total > 0 ? Math.min(done / total, 1) : 0;
             const checkedToday = completedTodaySet.has(dt.id);
-            const dayNum      = currentDay(dt);
+            const scheduledToday = scheduledTodaySet.has(dt.id);
+            const occNum      = currentOccurrence(dt);
 
             return (
               <div key={dt.id}
                 className="rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-transform cursor-pointer glow-soft flex items-stretch"
                 style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
                 onClick={() => setSelectedDt(dt)}>
-                <div className="w-1.5 flex-shrink-0" style={{ background: checkedToday ? "var(--sage)" : "var(--rose)" }} />
+                <div className="w-1.5 flex-shrink-0" style={{ background: checkedToday ? "var(--sage)" : scheduledToday ? "var(--rose)" : "var(--border)" }} />
                 <div className="px-5 py-4 flex items-start gap-4 flex-1">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-base font-bold text-[var(--t-text-dark)]">{dt.name}</span>
                       {dt.category && <CategoryPill cat={dt.category} categories={categories} />}
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "var(--sage-soft)", color: "var(--sage-deep)" }}>
+                        {freqLabel(dt.frequency_days || 1)}
+                      </span>
                     </div>
                     <div className="h-2 rounded-full overflow-hidden mb-1.5" style={{ background: "var(--sage-soft)" }}>
                       <div className="h-full rounded-full transition-all duration-500"
                         style={{ background: "linear-gradient(90deg, var(--sage), var(--rose))", width: `${pct * 100}%` }} />
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--t-text-muted)" }}>
-                      <span style={{ color: "var(--rose-deep)" }}>Day {dayNum} of {total}</span>
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold flex-wrap" style={{ color: "var(--t-text-muted)" }}>
+                      <span style={{ color: "var(--rose-deep)" }}>Day {occNum} of {total}</span>
                       <span>·</span>
                       <span>{done} / {total} done</span>
                       <span>·</span>
@@ -367,11 +367,13 @@ export default function DailyTasks({
                   {/* Checkbox — stopPropagation so clicking it doesn't open the edit modal */}
                   <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5"
                     onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" checked={checkedToday}
-                      onChange={() => onToggleCompletion(dt.id)}
+                    <input type="checkbox" checked={checkedToday} disabled={!scheduledToday}
+                      onChange={() => scheduledToday && onToggleCompletion(dt.id)}
                       className="kawaii-checkbox"
-                      style={{ width: "22px", height: "22px", opacity: checkedToday ? 0.7 : 1 }} />
-                    <span className="text-[9px] font-bold" style={{ color: "var(--sage-deep)" }}>today</span>
+                      style={{ width: "22px", height: "22px", opacity: checkedToday ? 0.7 : scheduledToday ? 1 : 0.35 }} />
+                    <span className="text-[9px] font-bold" style={{ color: scheduledToday ? "var(--sage-deep)" : "var(--t-text-muted)" }}>
+                      {scheduledToday ? "today" : "—"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -390,7 +392,7 @@ export default function DailyTasks({
             {showArchived && (
               <div className="flex flex-col gap-2">
                 {archived.map(dt => {
-                  const total = totalDays(dt);
+                  const total = totalOccurrences(dt);
                   const done  = completedCount(dt.id);
                   const pct   = total > 0 ? Math.min(done / total, 1) : 0;
                   return (
@@ -406,7 +408,7 @@ export default function DailyTasks({
                           <div className="h-full rounded-full" style={{ background: "var(--t-primary)", width: `${pct * 100}%` }} />
                         </div>
                         <span className="text-[11px] text-[var(--t-text-muted)]">
-                          {done} / {total} days · ended {fmtDate(dt.end_date)}
+                          {done} / {total} check-ins · ended {fmtDate(dt.end_date)}
                         </span>
                       </div>
                     </div>
@@ -419,7 +421,7 @@ export default function DailyTasks({
       </div>
 
       {showAdd && (
-        <AddDailyModal
+        <AddRecurringModal
           onClose={() => setShowAdd(false)}
           onAdd={onAddDailyTask}
           categories={categories}
@@ -427,10 +429,11 @@ export default function DailyTasks({
       )}
 
       {selectedDt && (
-        <DailyTaskEditModal
+        <RecurringTaskEditModal
           dt={selectedDt}
           instances={dailyTaskInstances.filter(t => t.daily_task_id === selectedDt.id)}
           completedCount={completedCount(selectedDt.id)}
+          totalOccurrences={totalOccurrences(selectedDt)}
           categories={categories}
           onSave={onUpdateDailyTask}
           onDelete={onDeleteDailyTask}

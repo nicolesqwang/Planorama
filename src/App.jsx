@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import Landing from "./components/Landing";
 import Dashboard from "./components/Dashboard";
 import TaskList from "./components/TaskList";
-import DailyTasks from "./components/DailyTasks";
+import RecurringTasks from "./components/RecurringTasks";
 import Pomodoro from "./components/Pomodoro";
 import Settings from "./components/Settings";
 import Finances from "./components/Finances";
@@ -378,31 +378,33 @@ export default function App() {
     setTasksState(p => p.filter(t => !t.done));
   }
 
-  async function addDailyTask({ name, category, durationDays }) {
+  async function addRecurringTask({ name, category, lengthDays, frequencyDays }) {
     const uid = session.user.id;
     const today = new Date();
     const startDate = localDateStr(today);
     const endDateObj = new Date(today);
-    endDateObj.setDate(today.getDate() + durationDays - 1);
+    endDateObj.setDate(today.getDate() + lengthDays - 1);
     const endDate = localDateStr(endDateObj);
 
-    const { data: dt, error } = await supabase.from("daily_tasks").insert({
-      user_id: uid, name, category: category || null, start_date: startDate, end_date: endDate,
-    }).select().single();
-    if (error || !dt) throw new Error(error?.message || "Failed to create daily task. Make sure you've run the database migration in Supabase.");
-    setDailyTasks(p => [...p, dt]);
-
+    // Only generate an instance every `frequencyDays` (e.g. 1 = daily, 7 = weekly)
     const rows = [];
-    for (let i = 0; i < durationDays; i++) {
+    for (let i = 0; i < lengthDays; i += frequencyDays) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       rows.push({
         user_id: uid, name, due_date: localDateStr(d),
         due_time: "23:59", categories: category ? [category] : [],
-        types: [], done: false, notes: "", daily_task_id: dt.id,
+        types: [], done: false, notes: "",
       });
     }
-    const { data: inserted } = await supabase.from("tasks").insert(rows).select();
+
+    const { data: dt, error } = await supabase.from("daily_tasks").insert({
+      user_id: uid, name, category: category || null, start_date: startDate, end_date: endDate, frequency_days: frequencyDays,
+    }).select().single();
+    if (error || !dt) throw new Error(error?.message || "Failed to create recurring task. Make sure you've run the database migration in Supabase.");
+    setDailyTasks(p => [...p, dt]);
+
+    const { data: inserted } = await supabase.from("tasks").insert(rows.map(r => ({ ...r, daily_task_id: dt.id }))).select();
     if (inserted) setTasksState(p => [...p, ...inserted]);
   }
 
@@ -477,20 +479,23 @@ export default function App() {
       ));
     }
 
-    // If extended: create new instances from (old end + 1) to new end
+    // If extended: walk the occurrence schedule (every frequency_days from
+    // start_date) and insert any new occurrence dates past the old end date.
     if (endDate > current.end_date) {
+      const freq = current.frequency_days || 1;
+      const start = new Date(current.start_date + "T00:00:00");
+      const newEnd = new Date(endDate + "T00:00:00");
+      const existingDates = new Set(tasks.filter(t => t.daily_task_id === dailyTaskId).map(t => t.due_date));
       const rows = [];
-      const start = new Date(current.end_date + "T00:00:00");
-      start.setDate(start.getDate() + 1);
-      const end = new Date(endDate + "T00:00:00");
-      let cur = new Date(start);
-      while (cur <= end) {
-        rows.push({
-          user_id: uid, name, due_date: localDateStr(cur),
-          due_time: "23:59", categories: category ? [category] : [],
-          types: [], done: false, notes: notes || "", daily_task_id: dailyTaskId,
-        });
-        cur.setDate(cur.getDate() + 1);
+      for (let cur = new Date(start); cur <= newEnd; cur.setDate(cur.getDate() + freq)) {
+        const ds = localDateStr(cur);
+        if (ds > current.end_date && !existingDates.has(ds)) {
+          rows.push({
+            user_id: uid, name, due_date: ds,
+            due_time: "23:59", categories: category ? [category] : [],
+            types: [], done: false, notes: notes || "", daily_task_id: dailyTaskId,
+          });
+        }
       }
       const { data: inserted } = await supabase.from("tasks").insert(rows).select();
       if (inserted) setTasksState(p => [...p, ...inserted]);
@@ -602,8 +607,11 @@ export default function App() {
 
   const activeTasks  = visibleTasks.filter(t => !t.done);
   const todayStr = localDateStr();
-  const completedTodayIds = new Set(dailyTaskCompletions.filter(c => c.completed_date === todayStr).map(c => c.daily_task_id));
-  const uncompletedDailyCount = dailyTasks.filter(dt => dt.start_date <= todayStr && dt.end_date >= todayStr && !completedTodayIds.has(dt.id)).length;
+  // Only count recurring tasks that actually have a check-in scheduled today —
+  // with a frequency >1 (e.g. weekly), most days aren't scheduled days at all.
+  const uncompletedRecurringCount = new Set(
+    tasks.filter(t => t.daily_task_id && t.due_date === todayStr && !t.done).map(t => t.daily_task_id)
+  ).size;
 
   const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -614,7 +622,7 @@ export default function App() {
     { id: "dashboard",   label: "Dashboard",    icon: "✦" },
     { id: "calendar",    label: "Calendar",     icon: "☽" },
     { id: "tasks",       label: "Tasks",        icon: "✿", badge: activeTasks.length || null },
-    { id: "daily-tasks", label: "Daily Tasks",  icon: "❀", badge: uncompletedDailyCount || null },
+    { id: "daily-tasks", label: "Recurring Tasks", icon: "❀", badge: uncompletedRecurringCount || null },
   ];
   const NAV_TOOLS = [
     { id: "pomodoro", label: "Pomodoro", icon: "◌" },
@@ -748,13 +756,13 @@ export default function App() {
               categories={normCats} addCategory={addCategory} removeCategory={removeCategory} updateCategory={updateCategory}
               taskTypes={taskTypes} addTaskType={addTaskType} removeTaskType={removeTaskType}
               onExcelImport={handleExcelImport} deleteAllCompleted={deleteAllCompleted}
-              onAddDailyTask={addDailyTask} completeDailyInstance={addDailyCompletion} />
+              onAddDailyTask={addRecurringTask} completeDailyInstance={addDailyCompletion} />
           )}
           {page === "daily-tasks" && (
-            <DailyTasks
+            <RecurringTasks
               dailyTasks={dailyTasks} dailyTaskCompletions={dailyTaskCompletions}
               dailyTaskInstances={tasks.filter(t => t.daily_task_id)}
-              categories={normCats} onAddDailyTask={addDailyTask} onToggleCompletion={toggleDailyCompletion}
+              categories={normCats} onAddDailyTask={addRecurringTask} onToggleCompletion={toggleDailyCompletion}
               onUpdateDailyTask={updateDailyTask} onDeleteDailyTask={deleteDailyTask} />
           )}
           {page === "finances" && (
