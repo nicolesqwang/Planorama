@@ -429,6 +429,15 @@ export default function App() {
     }
   }
 
+  async function toggleDailyTaskPaused(dailyTaskId) {
+    const current = dailyTasks.find(dt => dt.id === dailyTaskId);
+    if (!current) return;
+    const { data: updated, error } = await supabase.from("daily_tasks")
+      .update({ paused: !current.paused }).eq("id", dailyTaskId).select().single();
+    if (error || !updated) throw new Error(error?.message || "Failed to update recurring task");
+    setDailyTasks(p => p.map(dt => dt.id === dailyTaskId ? updated : dt));
+  }
+
   async function addDailyCompletion(dailyTaskId, date) {
     const uid = session.user.id;
     const already = dailyTaskCompletions.find(
@@ -602,15 +611,20 @@ export default function App() {
   // The Daily Tasks page itself reads from the unfiltered `tasks` array, so its
   // progress bars and streaks are untouched by this.
   const windowEndStr = (() => { const d = new Date(); d.setDate(d.getDate() + 6); return localDateStr(d); })();
+  // Paused recurring tasks stop being pushed into Tasks/Dashboard entirely —
+  // their not-yet-done instances stay hidden until the user resumes them.
+  const pausedDailyTaskIds = new Set(dailyTasks.filter(dt => dt.paused).map(dt => dt.id));
   // due_date <= windowEndStr covers both "overdue" (any past date) and "today through +6 days" in one check
-  const visibleTasks = tasks.filter(t => !t.daily_task_id || t.done || t.due_date <= windowEndStr);
+  const visibleTasks = tasks.filter(t =>
+    !t.daily_task_id || t.done || (t.due_date <= windowEndStr && !pausedDailyTaskIds.has(t.daily_task_id))
+  );
 
   const activeTasks  = visibleTasks.filter(t => !t.done);
   const todayStr = localDateStr();
   // Only count recurring tasks that actually have a check-in scheduled today —
   // with a frequency >1 (e.g. weekly), most days aren't scheduled days at all.
   const uncompletedRecurringCount = new Set(
-    tasks.filter(t => t.daily_task_id && t.due_date === todayStr && !t.done).map(t => t.daily_task_id)
+    tasks.filter(t => t.daily_task_id && t.due_date === todayStr && !t.done && !pausedDailyTaskIds.has(t.daily_task_id)).map(t => t.daily_task_id)
   ).size;
 
   const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
@@ -763,7 +777,8 @@ export default function App() {
               dailyTasks={dailyTasks} dailyTaskCompletions={dailyTaskCompletions}
               dailyTaskInstances={tasks.filter(t => t.daily_task_id)}
               categories={normCats} onAddDailyTask={addRecurringTask} onToggleCompletion={toggleDailyCompletion}
-              onUpdateDailyTask={updateDailyTask} onDeleteDailyTask={deleteDailyTask} />
+              onUpdateDailyTask={updateDailyTask} onDeleteDailyTask={deleteDailyTask}
+              onTogglePaused={toggleDailyTaskPaused} />
           )}
           {page === "finances" && (
             <Finances transactions={transactions} addTransaction={addTransaction} deleteTransaction={deleteTransaction} />

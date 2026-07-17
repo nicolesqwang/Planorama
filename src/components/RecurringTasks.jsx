@@ -20,7 +20,7 @@ function freqLabel(days) {
 }
 
 // ── Edit Modal ─────────────────────────────────────────────────
-function RecurringTaskEditModal({ dt, instances, completedCount, totalOccurrences, categories, onSave, onDelete, onClose }) {
+function RecurringTaskEditModal({ dt, instances, completedCount, totalOccurrences, categories, onSave, onDelete, onClose, onTogglePaused }) {
   const [name, setName]       = useState(dt.name);
   const [selCat, setSelCat]   = useState(dt.category || "");
   const [endDate, setEndDate] = useState(dt.end_date);
@@ -29,6 +29,7 @@ function RecurringTaskEditModal({ dt, instances, completedCount, totalOccurrence
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError]     = useState(null);
+  const [pausing, setPausing] = useState(false);
 
   const canSave = name.trim() && endDate >= dt.start_date;
 
@@ -64,14 +65,47 @@ function RecurringTaskEditModal({ dt, instances, completedCount, totalOccurrence
     }
   }
 
+  async function handleTogglePaused() {
+    if (pausing) return;
+    setPausing(true);
+    setError(null);
+    try {
+      await onTogglePaused(dt.id);
+    } catch (err) {
+      setError(err.message || "Failed to update. Please try again.");
+    } finally {
+      setPausing(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-[var(--t-bg-card)] border border-[var(--t-border)] rounded-2xl shadow-xl w-[500px] max-h-[85vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-[var(--t-text-muted)] hover:text-[var(--t-text-dark)] text-xl">✕</button>
-        <h2 style={lora} className="text-xl text-[var(--t-text-dark)] mb-0.5">Edit Recurring Task</h2>
-        <p className="text-[11px] text-[var(--t-text-muted)] mb-5">
+        <div className="flex items-center gap-2 mb-0.5">
+          <h2 style={lora} className="text-xl text-[var(--t-text-dark)]">Edit Recurring Task</h2>
+          {dt.paused && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "var(--t-bg-input)", color: "var(--t-text-muted)", border: "1px solid var(--t-border)" }}>
+              ⏸ Paused
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-[var(--t-text-muted)] mb-3">
           {completedCount} / {totalOccurrences} check-ins completed · {freqLabel(dt.frequency_days || 1).toLowerCase()} · started {new Date(dt.start_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </p>
+
+        <button onClick={handleTogglePaused} disabled={pausing}
+          className="mb-5 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-colors disabled:opacity-50"
+          style={dt.paused
+            ? { background: "var(--sage-soft)", color: "var(--sage-deep)", borderColor: "var(--border-sage)" }
+            : { background: "var(--t-bg-input)", color: "var(--t-text-med)", borderColor: "var(--t-border)" }}>
+          {pausing ? "Updating..." : dt.paused ? "▶ Resume streak" : "⏸ Pause streak"}
+        </button>
+        {dt.paused && (
+          <p className="text-[11px] text-[var(--t-text-muted)] -mt-4 mb-5">
+            While paused, this won&apos;t appear in your Tasks list. Resume anytime to pick it back up.
+          </p>
+        )}
 
         <div className="flex flex-col gap-4">
           <div>
@@ -254,11 +288,14 @@ function AddRecurringModal({ onClose, onAdd, categories }) {
 export default function RecurringTasks({
   dailyTasks, dailyTaskCompletions, dailyTaskInstances,
   categories, onAddDailyTask, onToggleCompletion,
-  onUpdateDailyTask, onDeleteDailyTask,
+  onUpdateDailyTask, onDeleteDailyTask, onTogglePaused,
 }) {
   const [showAdd, setShowAdd]     = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [selectedDt, setSelectedDt]    = useState(null);
+  const [selectedDtId, setSelectedDtId] = useState(null);
+  // Re-derived from dailyTasks each render (rather than storing the object itself)
+  // so the edit modal reflects live changes like pausing instead of a stale snapshot.
+  const selectedDt = selectedDtId ? dailyTasks.find(dt => dt.id === selectedDtId) || null : null;
 
   const todayStr = localDateStr();
   const completedTodaySet = new Set(
@@ -334,23 +371,28 @@ export default function RecurringTasks({
             const done        = completedCount(dt.id);
             const pct         = total > 0 ? Math.min(done / total, 1) : 0;
             const checkedToday = completedTodaySet.has(dt.id);
-            const scheduledToday = scheduledTodaySet.has(dt.id);
+            const scheduledToday = scheduledTodaySet.has(dt.id) && !dt.paused;
             const occNum      = currentOccurrence(dt);
 
             return (
               <div key={dt.id}
                 className="rounded-2xl overflow-hidden hover:-translate-y-0.5 transition-transform cursor-pointer glow-soft flex items-stretch"
-                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-                onClick={() => setSelectedDt(dt)}>
-                <div className="w-1.5 flex-shrink-0" style={{ background: checkedToday ? "var(--sage)" : scheduledToday ? "var(--rose)" : "var(--border)" }} />
+                style={{ background: "var(--surface)", border: "1px solid var(--border)", opacity: dt.paused ? 0.65 : 1 }}
+                onClick={() => setSelectedDtId(dt.id)}>
+                <div className="w-1.5 flex-shrink-0" style={{ background: dt.paused ? "var(--t-border)" : checkedToday ? "var(--sage)" : scheduledToday ? "var(--rose)" : "var(--border)" }} />
                 <div className="px-5 py-4 flex items-start gap-4 flex-1">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span className="text-base font-bold text-[var(--t-text-dark)]">{dt.name}</span>
                       {dt.category && <CategoryPill cat={dt.category} categories={categories} />}
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "var(--sage-soft)", color: "var(--sage-deep)" }}>
                         {freqLabel(dt.frequency_days || 1)}
                       </span>
+                      {dt.paused && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "var(--t-bg-input)", color: "var(--t-text-muted)", border: "1px solid var(--t-border)" }}>
+                          ⏸ Paused
+                        </span>
+                      )}
                     </div>
                     <div className="h-2 rounded-full overflow-hidden mb-1.5" style={{ background: "var(--sage-soft)" }}>
                       <div className="h-full rounded-full transition-all duration-500"
@@ -364,16 +406,22 @@ export default function RecurringTasks({
                       <span>until {fmtDate(dt.end_date)}</span>
                     </div>
                   </div>
-                  {/* Checkbox — stopPropagation so clicking it doesn't open the edit modal */}
-                  <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5"
+                  {/* Actions — stopPropagation so clicking them doesn't open the edit modal */}
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0 pt-0.5"
                     onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={checkedToday} disabled={!scheduledToday}
                       onChange={() => scheduledToday && onToggleCompletion(dt.id)}
                       className="kawaii-checkbox"
                       style={{ width: "22px", height: "22px", opacity: checkedToday ? 0.7 : scheduledToday ? 1 : 0.35 }} />
                     <span className="text-[9px] font-bold" style={{ color: scheduledToday ? "var(--sage-deep)" : "var(--t-text-muted)" }}>
-                      {scheduledToday ? "today" : "—"}
+                      {dt.paused ? "paused" : scheduledToday ? "today" : "—"}
                     </span>
+                    <button onClick={() => onTogglePaused(dt.id)}
+                      title={dt.paused ? "Resume" : "Pause"}
+                      className="text-[13px] leading-none rounded-full w-6 h-6 flex items-center justify-center transition-colors"
+                      style={{ background: "var(--t-bg-input)", color: "var(--t-text-med)" }}>
+                      {dt.paused ? "▶" : "⏸"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -398,7 +446,7 @@ export default function RecurringTasks({
                   return (
                     <div key={dt.id}
                       className="bg-[var(--t-bg-card)]/60 border border-[var(--t-border)] rounded-2xl overflow-hidden opacity-55 hover:opacity-75 cursor-pointer transition-opacity"
-                      onClick={() => setSelectedDt(dt)}>
+                      onClick={() => setSelectedDtId(dt.id)}>
                       <div className="px-5 py-3">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-sm font-medium line-through text-[var(--t-text-muted)]">{dt.name}</span>
@@ -437,7 +485,8 @@ export default function RecurringTasks({
           categories={categories}
           onSave={onUpdateDailyTask}
           onDelete={onDeleteDailyTask}
-          onClose={() => setSelectedDt(null)}
+          onTogglePaused={onTogglePaused}
+          onClose={() => setSelectedDtId(null)}
         />
       )}
     </div>
