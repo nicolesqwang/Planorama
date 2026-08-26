@@ -378,19 +378,21 @@ export default function App() {
     setTasksState(p => p.filter(t => !t.done));
   }
 
-  async function addRecurringTask({ name, category, lengthDays, frequencyDays }) {
+  async function addRecurringTask({ name, category, lengthDays, frequencyDays, startDate: startDateInput }) {
     const uid = session.user.id;
-    const today = new Date();
-    const startDate = localDateStr(today);
-    const endDateObj = new Date(today);
-    endDateObj.setDate(today.getDate() + lengthDays - 1);
+    // Default to today when the caller doesn't specify a start date (e.g. the
+    // "make this recurring" toggle in TaskList doesn't offer the start-date picker).
+    const startDate = startDateInput || localDateStr();
+    const start = new Date(startDate + "T00:00:00");
+    const endDateObj = new Date(start);
+    endDateObj.setDate(start.getDate() + lengthDays - 1);
     const endDate = localDateStr(endDateObj);
 
     // Only generate an instance every `frequencyDays` (e.g. 1 = daily, 7 = weekly)
     const rows = [];
     for (let i = 0; i < lengthDays; i += frequencyDays) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
       rows.push({
         user_id: uid, name, due_date: localDateStr(d),
         due_time: "23:59", categories: category ? [category] : [],

@@ -1,7 +1,18 @@
 import { useState } from "react";
+import { localDateStr } from "./dateUtils";
 
 // Shared between TaskList's "make this recurring" toggle and the dedicated
 // Recurring Tasks page, so both use the exact same length/frequency picker.
+
+// Sun–Sat, matches Google Calendar's "Repeat on" day-letter convention.
+export const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+// Next local date (YYYY-MM-DD) on/after `fromStr` that falls on `weekday` (0=Sun..6=Sat).
+export function nextDateForWeekday(fromStr, weekday) {
+  const d = new Date(fromStr + "T00:00:00");
+  d.setDate(d.getDate() + ((weekday - d.getDay() + 7) % 7));
+  return localDateStr(d);
+}
 
 export const LENGTH_OPTIONS = [
   { label: "3 days", days: 3 },

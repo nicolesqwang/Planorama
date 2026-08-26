@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { localDateStr } from "../dateUtils";
-import { LENGTH_OPTIONS, FREQUENCY_OPTIONS, occurrenceCount, RecurrencePicker } from "../recurrence";
+import { LENGTH_OPTIONS, FREQUENCY_OPTIONS, occurrenceCount, RecurrencePicker, WEEKDAY_LABELS, nextDateForWeekday } from "../recurrence";
 
 const lora = { fontFamily: "'Lora', serif", fontStyle: "italic", fontWeight: 500 };
 
@@ -198,16 +198,22 @@ function RecurringTaskEditModal({ dt, instances, completedCount, totalOccurrence
 function AddRecurringModal({ onClose, onAdd, categories }) {
   const [name, setName] = useState("");
   const [selCat, setSelCat] = useState("");
+  const [startDate, setStartDate] = useState(() => localDateStr());
   const [lengthDays, setLengthDays] = useState(7);
   const [frequencyDays, setFrequencyDays] = useState(1);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  const canSubmit = name.trim() && lengthDays >= 1 && frequencyDays >= 1;
+  const todayStr = localDateStr();
+  const canSubmit = name.trim() && lengthDays >= 1 && frequencyDays >= 1 && startDate >= todayStr;
   const occurrences = occurrenceCount(lengthDays, frequencyDays);
 
+  const startLabel = startDate === todayStr
+    ? "today"
+    : new Date(startDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
   const endPreview = lengthDays >= 1 ? (() => {
-    const d = new Date();
+    const d = new Date(startDate + "T00:00:00");
     d.setDate(d.getDate() + lengthDays - 1);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   })() : "";
@@ -217,7 +223,7 @@ function AddRecurringModal({ onClose, onAdd, categories }) {
     setSaving(true);
     setSubmitError(null);
     try {
-      await onAdd({ name: name.trim(), category: selCat || null, lengthDays, frequencyDays });
+      await onAdd({ name: name.trim(), category: selCat || null, lengthDays, frequencyDays, startDate });
       onClose();
     } catch (err) {
       setSaving(false);
@@ -238,6 +244,27 @@ function AddRecurringModal({ onClose, onAdd, categories }) {
               className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)] placeholder:text-[var(--t-text-muted)]" />
           </div>
 
+          <div>
+            <label className="block text-[10px] font-bold text-[var(--t-text-muted)] uppercase tracking-[0.7px] mb-1">Start Date</label>
+            <div className="flex items-center gap-1.5 mb-2">
+              {WEEKDAY_LABELS.map((label, idx) => {
+                const selected = new Date(startDate + "T00:00:00").getDay() === idx;
+                return (
+                  <button key={idx} type="button"
+                    onClick={() => setStartDate(nextDateForWeekday(todayStr, idx))}
+                    className="w-7 h-7 rounded-full text-xs font-bold transition-all flex-shrink-0"
+                    style={selected
+                      ? { background: "var(--rose)", color: "#fff" }
+                      : { background: "var(--t-bg-input)", color: "var(--t-text-med)", border: "1px solid var(--t-border)" }}>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <input type="date" value={startDate} min={todayStr} onChange={e => setStartDate(e.target.value)}
+              className="w-full text-sm bg-[var(--t-bg-input)] border border-[var(--t-border)] rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[var(--t-primary)]/40 text-[var(--t-text-dark)]" />
+          </div>
+
           <div className="flex gap-3">
             <div className="flex-1">
               <RecurrencePicker label="How long?" options={LENGTH_OPTIONS} value={lengthDays} onChange={setLengthDays} unitWord="day" />
@@ -248,7 +275,7 @@ function AddRecurringModal({ onClose, onAdd, categories }) {
           </div>
           {endPreview && (
             <p className="text-[11px] text-[var(--t-text-muted)] -mt-1">
-              Starts today · ends {endPreview} · {occurrences} check-in{occurrences !== 1 ? "s" : ""}
+              Starts {startLabel} · ends {endPreview} · {occurrences} check-in{occurrences !== 1 ? "s" : ""}
             </p>
           )}
 
