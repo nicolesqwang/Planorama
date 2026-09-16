@@ -434,10 +434,73 @@ export default function App() {
   async function toggleDailyTaskPaused(dailyTaskId) {
     const current = dailyTasks.find(dt => dt.id === dailyTaskId);
     if (!current) return;
+    const uid = session.user.id;
+    const todayStr = localDateStr();
+
+    if (!current.paused) {
+      // Pausing just freezes it in place — the actual cleanup (dropping the
+      // skipped check-ins and extending the streak) happens on resume, once
+      // we know how long the pause actually lasted.
+      const { data: updated, error } = await supabase.from("daily_tasks")
+        .update({ paused: true, paused_at: todayStr }).eq("id", dailyTaskId).select().single();
+      if (error || !updated) throw new Error(error?.message || "Failed to pause recurring task");
+      setDailyTasks(p => p.map(dt => dt.id === dailyTaskId ? updated : dt));
+      return;
+    }
+
+    // Resuming: drop the not-yet-done instances that fell inside the paused
+    // window, then tack the same number of fresh occurrences onto the end —
+    // so a paused streak keeps its full length instead of losing days, and
+    // "Day X of Y" continues counting from wherever it left off.
+    const pausedAt = current.paused_at || todayStr;
+    const freq = current.frequency_days || 1;
+
+    const inWindow = tasks.filter(t =>
+      t.daily_task_id === dailyTaskId && !t.done && t.due_date >= pausedAt && t.due_date < todayStr
+    );
+    const deletedCount = inWindow.length;
+    const deletedIds = new Set(inWindow.map(t => t.id));
+
+    if (deletedCount > 0) {
+      await supabase.from("tasks").delete().in("id", [...deletedIds]);
+      setTasksState(p => p.filter(t => !deletedIds.has(t.id)));
+    }
+
+    const remaining = tasks.filter(t => t.daily_task_id === dailyTaskId && !deletedIds.has(t.id));
+    const newRows = [];
+    if (deletedCount > 0) {
+      const lastDueDate = remaining.reduce((max, t) => t.due_date > max ? t.due_date : max, current.start_date);
+      const cursor = new Date(lastDueDate + "T00:00:00");
+      const notesTemplate = remaining[0]?.notes || "";
+      for (let i = 0; i < deletedCount; i++) {
+        cursor.setDate(cursor.getDate() + freq);
+        newRows.push({
+          user_id: uid, name: current.name, due_date: localDateStr(cursor),
+          due_time: "23:59", categories: current.category ? [current.category] : [],
+          types: [], done: false, notes: notesTemplate, daily_task_id: dailyTaskId,
+        });
+      }
+    }
+
+    const newEndDate = (() => {
+      const d = new Date(current.end_date + "T00:00:00");
+      d.setDate(d.getDate() + deletedCount * freq);
+      return localDateStr(d);
+    })();
+
     const { data: updated, error } = await supabase.from("daily_tasks")
-      .update({ paused: !current.paused }).eq("id", dailyTaskId).select().single();
-    if (error || !updated) throw new Error(error?.message || "Failed to update recurring task");
+      .update({
+        paused: false, paused_at: null,
+        paused_days: (current.paused_days || 0) + deletedCount * freq,
+        end_date: newEndDate,
+      }).eq("id", dailyTaskId).select().single();
+    if (error || !updated) throw new Error(error?.message || "Failed to resume recurring task");
     setDailyTasks(p => p.map(dt => dt.id === dailyTaskId ? updated : dt));
+
+    if (newRows.length > 0) {
+      const { data: inserted } = await supabase.from("tasks").insert(newRows).select();
+      if (inserted) setTasksState(p => [...p, ...inserted]);
+    }
   }
 
   async function addDailyCompletion(dailyTaskId, date) {

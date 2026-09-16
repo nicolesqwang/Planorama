@@ -103,7 +103,7 @@ function RecurringTaskEditModal({ dt, instances, completedCount, totalOccurrence
         </button>
         {dt.paused && (
           <p className="text-[11px] text-[var(--t-text-muted)] -mt-4 mb-5">
-            While paused, this won&apos;t appear in your Tasks list. Resume anytime to pick it back up.
+            While paused, this won&apos;t appear in your Tasks list. Resuming drops the check-ins you skipped and adds the same number to the end, so the streak keeps its full length.
           </p>
         )}
 
@@ -334,28 +334,35 @@ export default function RecurringTasks({
     dailyTaskInstances.filter(t => t.due_date === todayStr).map(t => t.daily_task_id)
   );
 
-  const active   = dailyTasks.filter(dt => dt.end_date >= todayStr);
-  const archived = dailyTasks.filter(dt => dt.end_date < todayStr);
+  // A paused streak stays "active" even once its (not-yet-extended) end date
+  // has technically passed — it isn't really over, just frozen.
+  const active   = dailyTasks.filter(dt => dt.paused || dt.end_date >= todayStr);
+  const archived = dailyTasks.filter(dt => !dt.paused && dt.end_date < todayStr);
 
   function completedCount(dtId) {
     return dailyTaskCompletions.filter(c => c.daily_task_id === dtId).length;
   }
 
   // "Day X of Y" is occurrence-based, not calendar-day-based — once a week
-  // for a month is "day 1 of 4", not "day 1 of 28".
+  // for a month is "day 1 of 4", not "day 1 of 28". paused_days is the
+  // cumulative span folded out of the schedule by past pause/resume cycles
+  // (see toggleDailyTaskPaused in App.jsx) — it keeps the count from
+  // inflating once end_date gets pushed out to make room for paused time.
   function totalOccurrences(dt) {
     const start = new Date(dt.start_date + "T00:00:00");
     const end   = new Date(dt.end_date   + "T00:00:00");
-    const spanDays = Math.round((end - start) / 86400000);
+    const spanDays = Math.round((end - start) / 86400000) - (dt.paused_days || 0);
     const freq = dt.frequency_days || 1;
     return Math.floor(spanDays / freq) + 1;
   }
 
   function currentOccurrence(dt) {
     const start = new Date(dt.start_date + "T00:00:00");
-    const today = new Date(todayStr + "T00:00:00");
+    // While paused, freeze the count at the day it was paused instead of
+    // letting it keep climbing with the calendar.
+    const ref = new Date((dt.paused ? dt.paused_at || todayStr : todayStr) + "T00:00:00");
     const freq = dt.frequency_days || 1;
-    const daysSinceStart = Math.max(0, Math.round((today - start) / 86400000));
+    const daysSinceStart = Math.max(0, Math.round((ref - start) / 86400000) - (dt.paused_days || 0));
     return Math.min(Math.floor(daysSinceStart / freq) + 1, totalOccurrences(dt));
   }
 
